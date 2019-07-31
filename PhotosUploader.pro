@@ -25,16 +25,22 @@ DEFINES += QT_DEPRECATED_WARNINGS
 CONFIG += c++11
 
 SOURCES += \
+        SettingsDialog.cpp \
         main.cpp \
         MainWindow.cpp
 
 HEADERS += \
-        MainWindow.h
+        MainWindow.h \
+        SettingsDialog.h
 
 FORMS += \
-        MainWindow.ui
+        MainWindow.ui \
+        SettingsDialog.ui
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
+
+RESOURCES += \
+    graphics.qrc
