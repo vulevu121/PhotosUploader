@@ -5,6 +5,7 @@
 #include <QStandardItemModel>
 #include "SettingsDialog.h"
 #include "googlephotoqueu.h"
+#include "CreateAlbumDialog.h"
 
 namespace Ui {
 class MainWindow;
@@ -25,6 +26,7 @@ private slots:
     void addFolder();
     void removeFolders();
     void clearWatchlist();
+    void createAlbum();
 
 private:
     Ui::MainWindow *ui;

@@ -31,6 +31,7 @@ DEFINES += QT_DEPRECATED_WARNINGS
 CONFIG += c++11
 
 SOURCES += \
+        CreateAlbumDialog.cpp \
         SettingsDialog.cpp \
         gmail.cpp \
         googleoauth2.cpp \
@@ -40,6 +41,7 @@ SOURCES += \
         MainWindow.cpp
 
 HEADERS += \
+        CreateAlbumDialog.h \
         MainWindow.h \
         SettingsDialog.h \
         gmail.h \
@@ -48,6 +50,7 @@ HEADERS += \
         googlephotoqueu.h
 
 FORMS += \
+        CreateAlbumDialog.ui \
         MainWindow.ui \
         SettingsDialog.ui
 
