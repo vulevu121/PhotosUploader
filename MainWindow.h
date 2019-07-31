@@ -3,6 +3,7 @@
 
 #include <QMainWindow>
 #include "SettingsDialog.h"
+#include "googlephotoqueu.h"
 
 namespace Ui {
 class MainWindow;
