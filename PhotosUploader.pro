@@ -30,15 +30,18 @@ DEFINES += QT_DEPRECATED_WARNINGS
 CONFIG += c++11
 
 SOURCES += \
+        CreateAlbumDialog.cpp \
         SettingsDialog.cpp \
         main.cpp \
         MainWindow.cpp
 
 HEADERS += \
+        CreateAlbumDialog.h \
         MainWindow.h \
         SettingsDialog.h
 
 FORMS += \
+        CreateAlbumDialog.ui \
         MainWindow.ui \
         SettingsDialog.ui
 

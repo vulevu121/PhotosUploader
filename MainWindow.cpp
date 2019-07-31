@@ -1,9 +1,10 @@
 #include <QStandardItemModel>
 #include <QStandardItem>
-
+#include <QFileDialog>
 #include <QDebug>
 #include "MainWindow.h"
 #include "ui_MainWindow.h"
+
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -12,7 +13,6 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->setupUi(this);
 
     settingsDialog = new SettingsDialog();
-
 
     QStringList queueHeader({
         "Filename",
@@ -73,18 +73,26 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->removeFolderButton, SIGNAL(clicked()), this, SLOT(removeFolders()));
     connect(ui->clearWatchlistButton, SIGNAL(clicked()), this, SLOT(clearWatchlist()));
 
+    connect(ui->actionCreateAlbum, SIGNAL(triggered()), this, SLOT(createAlbum()));
+
 }
 
 void MainWindow::addQueue() {
+    QFileDialog *fileDialog = new QFileDialog();
+
+    QString fileName = fileDialog->getOpenFileName(this, tr("Select folder"), "/home", tr("Images (*.png *.jpg)"));
+
+
     QList<QStandardItem *> queueRow({
         new QStandardItem("photo.jpg"),
         new QStandardItem("MyAlbum"),
         new QStandardItem("Queue"),
         new QStandardItem("7/29/2019 8:32PM"),
-        new QStandardItem("/home/pictures/photo.jpg")
+        new QStandardItem(fileName)
     });
 
     this->queueModel->appendRow(queueRow);
+    ui->statusBar->showMessage("Queue added");
 }
 
 void MainWindow::removeQueues() {
@@ -93,25 +101,35 @@ void MainWindow::removeQueues() {
     foreach (QModelIndex index, selectedRows) {
         this->queueModel->removeRow(index.row());
     }
+
+    ui->statusBar->showMessage("Queue removed");
 }
 
 void MainWindow::clearQueue() {
     this->queueModel->removeRows(0, this->queueModel->rowCount());
+
+    ui->statusBar->showMessage("Queue cleared");
 }
 
 
 
 void MainWindow::addFolder() {
+    QFileDialog *fileDialog = new QFileDialog();
+
+    QString fileName = fileDialog->getExistingDirectory(this, tr("Select folder"), "/home");
+
     QList<QStandardItem *> watchRow({
         new QStandardItem("MyPictures"),
         new QStandardItem("Scanned"),
         new QStandardItem("1"),
         new QStandardItem("7/29/2019 8:32PM"),
         new QStandardItem("7/29/2019 8:32PM"),
-        new QStandardItem("/home/My Pictures")
+        new QStandardItem(fileName)
     });
 
     this->watchModel->appendRow(watchRow);
+
+    ui->statusBar->showMessage("Folder added to watchlist");
 }
 
 void MainWindow::removeFolders() {
@@ -120,10 +138,19 @@ void MainWindow::removeFolders() {
     foreach (QModelIndex index, selectedRows) {
         this->watchModel->removeRow(index.row());
     }
+
+    ui->statusBar->showMessage("Folder(s) removed from watchlist");
 }
 
 void MainWindow::clearWatchlist() {
     this->watchModel->removeRows(0, this->watchModel->rowCount());
+
+    ui->statusBar->showMessage("Watchlist cleared");
+}
+
+void MainWindow::createAlbum() {
+    CreateAlbumDialog *dialog = new CreateAlbumDialog();
+    dialog->show();
 }
 
 MainWindow::~MainWindow()

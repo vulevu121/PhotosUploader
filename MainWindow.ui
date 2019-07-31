@@ -15,7 +15,7 @@
   </property>
   <property name="windowIcon">
    <iconset resource="graphics.qrc">
-    <normaloff>:/icon/photo</normaloff>:/icon/photo</iconset>
+    <normaloff>:/camera.ico</normaloff>:/camera.ico</iconset>
   </property>
   <property name="tabShape">
    <enum>QTabWidget::Rounded</enum>
@@ -25,7 +25,7 @@
     <item>
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>0</number>
+       <number>1</number>
       </property>
       <widget class="QWidget" name="tab_1">
        <attribute name="title">
@@ -104,6 +104,12 @@
          <widget class="QTableView" name="queueTableView">
           <property name="selectionBehavior">
            <enum>QAbstractItemView::SelectRows</enum>
+          </property>
+          <property name="textElideMode">
+           <enum>Qt::ElideLeft</enum>
+          </property>
+          <property name="wordWrap">
+           <bool>false</bool>
           </property>
          </widget>
         </item>
@@ -196,6 +202,12 @@
           <property name="selectionBehavior">
            <enum>QAbstractItemView::SelectRows</enum>
           </property>
+          <property name="textElideMode">
+           <enum>Qt::ElideLeft</enum>
+          </property>
+          <property name="wordWrap">
+           <bool>false</bool>
+          </property>
          </widget>
         </item>
        </layout>
@@ -237,6 +249,7 @@
    <addaction name="actionPause"/>
    <addaction name="actionStop"/>
    <addaction name="actionSetting"/>
+   <addaction name="actionCreateAlbum"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
   <action name="actionResume">
@@ -273,6 +286,18 @@
    </property>
    <property name="text">
     <string>Pause</string>
+   </property>
+  </action>
+  <action name="actionCreateAlbum">
+   <property name="icon">
+    <iconset resource="graphics.qrc">
+     <normaloff>:/icon/photo_album</normaloff>:/icon/photo_album</iconset>
+   </property>
+   <property name="text">
+    <string>CreateAlbum</string>
+   </property>
+   <property name="toolTip">
+    <string>Create Album</string>
    </property>
   </action>
  </widget>
