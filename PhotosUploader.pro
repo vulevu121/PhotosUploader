@@ -4,7 +4,8 @@
 #
 #-------------------------------------------------
 
-QT       += core gui
+QT += widgets network networkauth gui core
+QT += webenginewidgets
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -32,13 +33,21 @@ CONFIG += c++11
 SOURCES += \
         CreateAlbumDialog.cpp \
         SettingsDialog.cpp \
+        gmail.cpp \
+        googleoauth2.cpp \
+        googlephoto.cpp \
+        googlephotoqueu.cpp \
         main.cpp \
         MainWindow.cpp
 
 HEADERS += \
         CreateAlbumDialog.h \
         MainWindow.h \
-        SettingsDialog.h
+        SettingsDialog.h \
+        gmail.h \
+        googleoauth2.h \
+        googlephoto.h \
+        googlephotoqueu.h
 
 FORMS += \
         CreateAlbumDialog.ui \
@@ -52,3 +61,6 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 
 RESOURCES += \
     graphics.qrc
+
+DISTFILES += \
+    Upload Log.json

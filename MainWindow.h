@@ -4,6 +4,7 @@
 #include <QMainWindow>
 #include <QStandardItemModel>
 #include "SettingsDialog.h"
+#include "googlephotoqueu.h"
 #include "CreateAlbumDialog.h"
 
 namespace Ui {
