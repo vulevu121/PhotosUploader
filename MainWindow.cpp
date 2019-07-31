@@ -82,17 +82,20 @@ void MainWindow::addQueue() {
 
     QString fileName = fileDialog->getOpenFileName(this, tr("Select folder"), "/home", tr("Images (*.png *.jpg)"));
 
+    if (fileName.length() > 0) {
 
-    QList<QStandardItem *> queueRow({
-        new QStandardItem("photo.jpg"),
-        new QStandardItem("MyAlbum"),
-        new QStandardItem("Queue"),
-        new QStandardItem("7/29/2019 8:32PM"),
-        new QStandardItem(fileName)
-    });
+        QList<QStandardItem *> queueRow({
+            new QStandardItem("photo.jpg"),
+            new QStandardItem("MyAlbum"),
+            new QStandardItem("Queue"),
+            new QStandardItem("7/29/2019 8:32PM"),
+            new QStandardItem(fileName)
+        });
 
-    this->queueModel->appendRow(queueRow);
-    ui->statusBar->showMessage("Queue added");
+        this->queueModel->appendRow(queueRow);
+        ui->statusBar->showMessage("Queue added");
+    }
+
 }
 
 void MainWindow::removeQueues() {
@@ -118,18 +121,22 @@ void MainWindow::addFolder() {
 
     QString fileName = fileDialog->getExistingDirectory(this, tr("Select folder"), "/home");
 
-    QList<QStandardItem *> watchRow({
-        new QStandardItem("MyPictures"),
-        new QStandardItem("Scanned"),
-        new QStandardItem("1"),
-        new QStandardItem("7/29/2019 8:32PM"),
-        new QStandardItem("7/29/2019 8:32PM"),
-        new QStandardItem(fileName)
-    });
+    if (fileName.length() > 0) {
+        QList<QStandardItem *> watchRow({
+            new QStandardItem("MyPictures"),
+            new QStandardItem("Scanned"),
+            new QStandardItem("1"),
+            new QStandardItem("7/29/2019 8:32PM"),
+            new QStandardItem("7/29/2019 8:32PM"),
+            new QStandardItem(fileName)
+        });
 
-    this->watchModel->appendRow(watchRow);
+        this->watchModel->appendRow(watchRow);
 
-    ui->statusBar->showMessage("Folder added to watchlist");
+        ui->statusBar->showMessage("Folder added to watchlist");
+    }
+
+
 }
 
 void MainWindow::removeFolders() {

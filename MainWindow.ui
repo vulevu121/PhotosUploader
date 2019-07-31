@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Photos Uploader</string>
+   <string>Pixyl Uploader</string>
   </property>
   <property name="windowIcon">
    <iconset resource="graphics.qrc">
@@ -248,8 +248,13 @@
    <addaction name="actionResume"/>
    <addaction name="actionPause"/>
    <addaction name="actionStop"/>
-   <addaction name="actionSetting"/>
+   <addaction name="separator"/>
    <addaction name="actionCreateAlbum"/>
+   <addaction name="separator"/>
+   <addaction name="actionLogIn"/>
+   <addaction name="actionLogOut"/>
+   <addaction name="separator"/>
+   <addaction name="actionSetting"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
   <action name="actionResume">
@@ -298,6 +303,30 @@
    </property>
    <property name="toolTip">
     <string>Create Album</string>
+   </property>
+  </action>
+  <action name="actionLogIn">
+   <property name="icon">
+    <iconset resource="graphics.qrc">
+     <normaloff>:/icon/log_in</normaloff>:/icon/log_in</iconset>
+   </property>
+   <property name="text">
+    <string>LogIn</string>
+   </property>
+   <property name="toolTip">
+    <string>Log In</string>
+   </property>
+  </action>
+  <action name="actionLogOut">
+   <property name="icon">
+    <iconset resource="graphics.qrc">
+     <normaloff>:/icon/log_out</normaloff>:/icon/log_out</iconset>
+   </property>
+   <property name="text">
+    <string>LogOut</string>
+   </property>
+   <property name="toolTip">
+    <string>Log Out</string>
    </property>
   </action>
  </widget>

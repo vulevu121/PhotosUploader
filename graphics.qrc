@@ -34,6 +34,9 @@
         <file alias="add_photo">Images/1x/outline_add_photo_alternate_white_48dp.png</file>
         <file alias="photo">Images/1x/outline_photo_white_48dp.png</file>
         <file alias="photo_album">Images/1x/outline_photo_album_white_48dp.png</file>
+        <file alias="log_in">Images/1x/outline_account_box_white_48dp.png</file>
+        <file alias="log_out">Images/1x/outline_exit_to_app_white_48dp.png</file>
+        <file>Images/1x/outline_person_outline_white_48dp.png</file>
     </qresource>
     <qresource prefix="/">
         <file>camera.ico</file>
