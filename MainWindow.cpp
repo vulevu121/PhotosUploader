@@ -158,6 +158,7 @@ void MainWindow::clearWatchlist() {
 void MainWindow::createAlbum() {
     CreateAlbumDialog *dialog = new CreateAlbumDialog();
     dialog->show();
+    qDebug() << "Create album";
 }
 
 MainWindow::~MainWindow()
