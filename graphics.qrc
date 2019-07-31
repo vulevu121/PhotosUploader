@@ -34,4 +34,7 @@
         <file alias="add_photo">Images/1x/outline_add_photo_alternate_white_48dp.png</file>
         <file alias="photo">Images/1x/outline_photo_white_48dp.png</file>
     </qresource>
+    <qresource prefix="/">
+        <file>camera.ico</file>
+    </qresource>
 </RCC>
