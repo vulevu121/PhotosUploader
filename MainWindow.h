@@ -2,6 +2,7 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include "SettingsDialog.h"
 
 namespace Ui {
 class MainWindow;
@@ -15,8 +16,12 @@ public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
+private slots:
+
+
 private:
     Ui::MainWindow *ui;
+    SettingsDialog *settingsDialog = nullptr;
 };
 
 #endif // MAINWINDOW_H

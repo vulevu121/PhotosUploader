@@ -1,2 +1,37 @@
-<!DOCTYPE RCC>
-<RCC version="1.0"/>
+<RCC>
+    <qresource prefix="/icon">
+        <file alias="add">Images/1x/outline_add_white_48dp.png</file>
+        <file>Images/1x/outline_arrow_back_ios_white_48dp.png</file>
+        <file>Images/1x/outline_camera_white_48dp.png</file>
+        <file alias="clear_all">Images/1x/outline_clear_all_white_48dp.png</file>
+        <file>Images/1x/outline_clear_white_48dp.png</file>
+        <file>Images/1x/outline_color_lens_white_48dp.png</file>
+        <file alias="delete">Images/1x/outline_delete_forever_white_48dp.png</file>
+        <file>Images/1x/outline_email_white_48dp.png</file>
+        <file alias="folder">Images/1x/outline_folder_open_white_48dp.png</file>
+        <file>Images/1x/outline_folder_shared_white_48dp.png</file>
+        <file>Images/1x/outline_fullscreen_exit_white_48dp.png</file>
+        <file>Images/1x/outline_fullscreen_white_48dp.png</file>
+        <file>Images/1x/outline_insert_drive_file_white_48dp.png</file>
+        <file>Images/1x/outline_lock_open_white_48dp.png</file>
+        <file>Images/1x/outline_lock_white_48dp.png</file>
+        <file>Images/1x/outline_open_with_white_48dp.png</file>
+        <file alias="pause">Images/1x/outline_pause_white_48dp.png</file>
+        <file>Images/1x/outline_photo_camera_white_48dp.png</file>
+        <file>Images/1x/outline_photo_library_white_48dp.png</file>
+        <file alias="resume">Images/1x/outline_play_arrow_white_48dp.png</file>
+        <file>Images/1x/outline_print_white_48dp.png</file>
+        <file>Images/1x/outline_refresh_white_48dp.png</file>
+        <file alias="remove">Images/1x/outline_remove_white_48dp.png</file>
+        <file>Images/1x/outline_send_white_48dp.png</file>
+        <file>Images/1x/outline_settings_backup_restore_white_48dp.png</file>
+        <file>Images/1x/outline_textsms_white_48dp.png</file>
+        <file alias="setting">Images/1x/outline_tune_white_48dp.png</file>
+        <file>Images/1x/outline_video_library_white_48dp.png</file>
+        <file>Images/1x/outline_zoom_in_white_48dp.png</file>
+        <file>Images/1x/outline_zoom_out_white_48dp.png</file>
+        <file alias="stop">Images/1x/outline_stop_white_48dp.png</file>
+        <file alias="add_photo">Images/1x/outline_add_photo_alternate_white_48dp.png</file>
+        <file alias="photo">Images/1x/outline_photo_white_48dp.png</file>
+    </qresource>
+</RCC>

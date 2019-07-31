@@ -1,24 +1,210 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
  <class>MainWindow</class>
- <widget class="QMainWindow" name="MainWindow" >
-  <property name="geometry" >
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>400</width>
-    <height>300</height>
+    <width>750</width>
+    <height>403</height>
    </rect>
   </property>
-  <property name="windowTitle" >
-   <string>MainWindow</string>
+  <property name="windowTitle">
+   <string>Photos Uploader</string>
   </property>
-  <widget class="QMenuBar" name="menuBar" />
-  <widget class="QToolBar" name="mainToolBar" />
-  <widget class="QWidget" name="centralWidget" />
-  <widget class="QStatusBar" name="statusBar" />
+  <property name="windowIcon">
+   <iconset resource="graphics.qrc">
+    <normaloff>:/icon/photo</normaloff>:/icon/photo</iconset>
+  </property>
+  <property name="tabShape">
+   <enum>QTabWidget::Rounded</enum>
+  </property>
+  <widget class="QWidget" name="centralWidget">
+   <layout class="QVBoxLayout" name="verticalLayout">
+    <item>
+     <widget class="QTabWidget" name="tabWidget">
+      <property name="currentIndex">
+       <number>0</number>
+      </property>
+      <widget class="QWidget" name="tab_1">
+       <attribute name="title">
+        <string>Queue</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayout_2">
+        <item>
+         <widget class="QTableView" name="queueTableView"/>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="tab_2">
+       <attribute name="title">
+        <string>Watch Folders</string>
+       </attribute>
+       <layout class="QHBoxLayout" name="horizontalLayout">
+        <item>
+         <layout class="QVBoxLayout" name="verticalLayout_3">
+          <item>
+           <widget class="QToolButton" name="toolButton">
+            <property name="toolTip">
+             <string>Add folder to watchlist</string>
+            </property>
+            <property name="text">
+             <string>...</string>
+            </property>
+            <property name="icon">
+             <iconset resource="graphics.qrc">
+              <normaloff>:/icon/add</normaloff>:/icon/add</iconset>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QToolButton" name="toolButton_2">
+            <property name="toolTip">
+             <string>Remove folder from watchlist</string>
+            </property>
+            <property name="text">
+             <string>...</string>
+            </property>
+            <property name="icon">
+             <iconset resource="graphics.qrc">
+              <normaloff>:/icon/remove</normaloff>:/icon/remove</iconset>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QToolButton" name="toolButton_3">
+            <property name="toolTip">
+             <string>Clear watchlist</string>
+            </property>
+            <property name="text">
+             <string>...</string>
+            </property>
+            <property name="icon">
+             <iconset resource="graphics.qrc">
+              <normaloff>:/icon/clear_all</normaloff>:/icon/clear_all</iconset>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <spacer name="verticalSpacer">
+            <property name="orientation">
+             <enum>Qt::Vertical</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>20</width>
+              <height>40</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <widget class="QTableView" name="watchTableView"/>
+        </item>
+       </layout>
+      </widget>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QMenuBar" name="menuBar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>750</width>
+     <height>20</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QToolBar" name="mainToolBar">
+   <property name="movable">
+    <bool>false</bool>
+   </property>
+   <property name="iconSize">
+    <size>
+     <width>32</width>
+     <height>32</height>
+    </size>
+   </property>
+   <property name="floatable">
+    <bool>false</bool>
+   </property>
+   <attribute name="toolBarArea">
+    <enum>TopToolBarArea</enum>
+   </attribute>
+   <attribute name="toolBarBreak">
+    <bool>false</bool>
+   </attribute>
+   <addaction name="actionResume"/>
+   <addaction name="actionPause"/>
+   <addaction name="actionStop"/>
+   <addaction name="actionAdd"/>
+   <addaction name="actionDelete"/>
+   <addaction name="actionSetting"/>
+  </widget>
+  <widget class="QStatusBar" name="statusBar"/>
+  <action name="actionResume">
+   <property name="icon">
+    <iconset resource="graphics.qrc">
+     <normaloff>:/icon/resume</normaloff>:/icon/resume</iconset>
+   </property>
+   <property name="text">
+    <string>Resume</string>
+   </property>
+  </action>
+  <action name="actionStop">
+   <property name="icon">
+    <iconset resource="graphics.qrc">
+     <normaloff>:/icon/stop</normaloff>:/icon/stop</iconset>
+   </property>
+   <property name="text">
+    <string>Stop</string>
+   </property>
+  </action>
+  <action name="actionAdd">
+   <property name="icon">
+    <iconset resource="graphics.qrc">
+     <normaloff>:/icon/add_photo</normaloff>:/icon/add_photo</iconset>
+   </property>
+   <property name="text">
+    <string>Add</string>
+   </property>
+  </action>
+  <action name="actionDelete">
+   <property name="icon">
+    <iconset resource="graphics.qrc">
+     <normaloff>:/icon/delete</normaloff>:/icon/delete</iconset>
+   </property>
+   <property name="text">
+    <string>Delete</string>
+   </property>
+  </action>
+  <action name="actionSetting">
+   <property name="icon">
+    <iconset resource="graphics.qrc">
+     <normaloff>:/icon/setting</normaloff>:/icon/setting</iconset>
+   </property>
+   <property name="text">
+    <string>Setting</string>
+   </property>
+  </action>
+  <action name="actionPause">
+   <property name="icon">
+    <iconset resource="graphics.qrc">
+     <normaloff>:/icon/pause</normaloff>:/icon/pause</iconset>
+   </property>
+   <property name="text">
+    <string>Pause</string>
+   </property>
+  </action>
  </widget>
- <layoutDefault spacing="6" margin="11" />
- <pixmapfunction></pixmapfunction>
- <resources/>
+ <layoutdefault spacing="6" margin="11"/>
+ <resources>
+  <include location="graphics.qrc"/>
+ </resources>
  <connections/>
 </ui>
