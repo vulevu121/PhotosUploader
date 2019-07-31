@@ -44,6 +44,20 @@ public slots:
     void CloseLog();
     void begin();
 
+
+
+private slots:
+    void CreateNewAlbum();
+    void CameraFolderTimer();
+    void UploadListTimer();
+    void CameraFolderTimerStart();
+    void CameraFolderTimerStop();
+    void UploadListTimerStart();
+    void UploadListTimerStop();
+
+
+
+
 private:
     QString camera_folder_path  = QString("C:/Users/khuon/Documents/GooglePhoto/camera");
     QDir * camera_folder;

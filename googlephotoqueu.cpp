@@ -49,8 +49,33 @@ void GooglePhotoQueu::CreateNewAlbum(){
     connect(p,SIGNAL(albumCreated()),p,SLOT(ShareAlbum()));
 }
 
-void GooglePhotoQueu
+void GooglePhotoQueu::CameraFolderTimer(){
+    // Check directory every 4 second for new photo
+    timer1 = new QTimer(this);
+    connect(timer1,SIGNAL(timeout()),this,SLOT(CheckCameraFolder()));
+}
 
+void GooglePhotoQueu::CameraFolderTimerStart(){
+    timer1->start(4000);
+}
+
+void GooglePhotoQueu::CameraFolderTimerStop(){
+    timer1->stop();
+}
+
+void GooglePhotoQueu::UploadListTimer(){
+    // Check the upload list every 1 second for photo to upload
+    timer2 = new QTimer(this);
+    connect(timer2,SIGNAL(timeout()),this,SLOT(CheckUploadList()));
+}
+
+void GooglePhotoQueu::UploadListTimerStart(){
+    timer2->start(1000);
+}
+
+void GooglePhotoQueu::UploadListTimerStop(){
+    timer2->stop();
+}
 
 void GooglePhotoQueu::OpenLog(){
     qDebug() << "Opening upload log";
