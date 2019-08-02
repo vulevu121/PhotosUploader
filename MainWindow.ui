@@ -25,7 +25,7 @@
     <item>
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>1</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="tab_1">
        <attribute name="title">
@@ -107,6 +107,12 @@
           </property>
           <property name="textElideMode">
            <enum>Qt::ElideLeft</enum>
+          </property>
+          <property name="verticalScrollMode">
+           <enum>QAbstractItemView::ScrollPerPixel</enum>
+          </property>
+          <property name="horizontalScrollMode">
+           <enum>QAbstractItemView::ScrollPerPixel</enum>
           </property>
           <property name="wordWrap">
            <bool>false</bool>
@@ -205,6 +211,12 @@
           <property name="textElideMode">
            <enum>Qt::ElideLeft</enum>
           </property>
+          <property name="verticalScrollMode">
+           <enum>QAbstractItemView::ScrollPerPixel</enum>
+          </property>
+          <property name="horizontalScrollMode">
+           <enum>QAbstractItemView::ScrollPerPixel</enum>
+          </property>
           <property name="wordWrap">
            <bool>false</bool>
           </property>
@@ -222,7 +234,7 @@
      <x>0</x>
      <y>0</y>
      <width>750</width>
-     <height>21</height>
+     <height>20</height>
     </rect>
    </property>
   </widget>
@@ -253,6 +265,7 @@
    <addaction name="separator"/>
    <addaction name="actionLogIn"/>
    <addaction name="actionLogOut"/>
+   <addaction name="actionEmail"/>
    <addaction name="separator"/>
    <addaction name="actionSetting"/>
   </widget>
@@ -327,6 +340,18 @@
    </property>
    <property name="toolTip">
     <string>Log Out</string>
+   </property>
+  </action>
+  <action name="actionEmail">
+   <property name="icon">
+    <iconset resource="graphics.qrc">
+     <normaloff>:/icon/email</normaloff>:/icon/email</iconset>
+   </property>
+   <property name="text">
+    <string>Email</string>
+   </property>
+   <property name="toolTip">
+    <string>Email</string>
    </property>
   </action>
  </widget>

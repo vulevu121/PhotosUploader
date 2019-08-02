@@ -3,6 +3,10 @@
 
 #include <QMainWindow>
 #include <QStandardItemModel>
+#include <QStandardItem>
+#include <QFileDialog>
+#include <QDebug>
+#include <QDir>
 #include "SettingsDialog.h"
 #include "googlephotoqueu.h"
 #include "CreateAlbumDialog.h"

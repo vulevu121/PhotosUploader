@@ -7,7 +7,7 @@
         <file>Images/1x/outline_clear_white_48dp.png</file>
         <file>Images/1x/outline_color_lens_white_48dp.png</file>
         <file alias="delete">Images/1x/outline_delete_forever_white_48dp.png</file>
-        <file>Images/1x/outline_email_white_48dp.png</file>
+        <file alias="email">Images/1x/outline_email_white_48dp.png</file>
         <file alias="folder">Images/1x/outline_folder_open_white_48dp.png</file>
         <file>Images/1x/outline_folder_shared_white_48dp.png</file>
         <file>Images/1x/outline_fullscreen_exit_white_48dp.png</file>
@@ -23,7 +23,7 @@
         <file>Images/1x/outline_print_white_48dp.png</file>
         <file>Images/1x/outline_refresh_white_48dp.png</file>
         <file alias="remove">Images/1x/outline_remove_white_48dp.png</file>
-        <file>Images/1x/outline_send_white_48dp.png</file>
+        <file alias="send">Images/1x/outline_send_white_48dp.png</file>
         <file>Images/1x/outline_settings_backup_restore_white_48dp.png</file>
         <file>Images/1x/outline_textsms_white_48dp.png</file>
         <file alias="setting">Images/1x/outline_tune_white_48dp.png</file>

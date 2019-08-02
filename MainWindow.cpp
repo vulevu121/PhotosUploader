@@ -1,7 +1,3 @@
-#include <QStandardItemModel>
-#include <QStandardItem>
-#include <QFileDialog>
-#include <QDebug>
 #include "MainWindow.h"
 #include "ui_MainWindow.h"
 
@@ -19,6 +15,7 @@ MainWindow::MainWindow(QWidget *parent) :
         "Album",
         "Status",
         "Date Added",
+        "Date Modified",
         "Path",
     });
     queueModel = new QStandardItemModel();
@@ -26,15 +23,15 @@ MainWindow::MainWindow(QWidget *parent) :
 
     ui->queueTableView->setModel(queueModel);
 
-    QList<QStandardItem *> queueRow({
-        new QStandardItem("photo.jpg"),
-        new QStandardItem("MyAlbum"),
-        new QStandardItem("Queue"),
-        new QStandardItem("7/29/2019 8:32PM"),
-        new QStandardItem("/home/pictures/photo.jpg")
-    });
+//    QList<QStandardItem *> queueRow({
+//        new QStandardItem("photo.jpg"),
+//        new QStandardItem("MyAlbum"),
+//        new QStandardItem("Queue"),
+//        new QStandardItem("7/29/2019 8:32PM"),
+//        new QStandardItem("/home/pictures/photo.jpg")
+//    });
 
-    queueModel->appendRow(queueRow);
+//    queueModel->appendRow(queueRow);
 
     ui->queueTableView->resizeColumnsToContents();
 
@@ -51,16 +48,16 @@ MainWindow::MainWindow(QWidget *parent) :
 
     ui->watchTableView->setModel(watchModel);
 
-    QList<QStandardItem *> watchRow({
-        new QStandardItem("MyPictures"),
-        new QStandardItem("Scanned"),
-        new QStandardItem("1"),
-        new QStandardItem("7/29/2019 8:32PM"),
-        new QStandardItem("7/29/2019 8:32PM"),
-        new QStandardItem("/home/My Pictures")
-    });
+//    QList<QStandardItem *> watchRow({
+//        new QStandardItem("MyPictures"),
+//        new QStandardItem("Scanned"),
+//        new QStandardItem("1"),
+//        new QStandardItem("7/29/2019 8:32PM"),
+//        new QStandardItem("7/29/2019 8:32PM"),
+//        new QStandardItem("/home/My Pictures")
+//    });
 
-    watchModel->appendRow(watchRow);
+//    watchModel->appendRow(watchRow);
 
 
     ui->watchTableView->resizeColumnsToContents();
@@ -80,20 +77,23 @@ MainWindow::MainWindow(QWidget *parent) :
 void MainWindow::addQueue() {
     QFileDialog *fileDialog = new QFileDialog();
 
-    QString fileName = fileDialog->getOpenFileName(this, tr("Select folder"), "/home", tr("Images (*.png *.jpg)"));
+    QString filePath = fileDialog->getOpenFileName(this, tr("Select folder"), "", tr("Images (*.png *.jpg)"));
+    QFileInfo fileInfo(filePath);
 
-    if (fileName.length() > 0) {
+    if (filePath.length() > 0) {
 
         QList<QStandardItem *> queueRow({
-            new QStandardItem("photo.jpg"),
+            new QStandardItem(fileInfo.fileName()),
             new QStandardItem("MyAlbum"),
             new QStandardItem("Queue"),
             new QStandardItem("7/29/2019 8:32PM"),
-            new QStandardItem(fileName)
+            new QStandardItem(fileInfo.lastModified().toString()),
+            new QStandardItem(filePath)
         });
 
         this->queueModel->appendRow(queueRow);
         ui->statusBar->showMessage("Queue added");
+        ui->queueTableView->resizeColumnsToContents();
     }
 
 }
@@ -119,21 +119,25 @@ void MainWindow::clearQueue() {
 void MainWindow::addFolder() {
     QFileDialog *fileDialog = new QFileDialog();
 
-    QString fileName = fileDialog->getExistingDirectory(this, tr("Select folder"), "/home");
+    QString folderPath = fileDialog->getExistingDirectory(this, tr("Select folder"), "");
+    QDir dir(folderPath);
+    QFileInfo fileInfo(folderPath);
+    qDebug() << dir.count();
 
-    if (fileName.length() > 0) {
+    if (folderPath.length() > 0) {
         QList<QStandardItem *> watchRow({
-            new QStandardItem("MyPictures"),
+            new QStandardItem(dir.dirName()),
             new QStandardItem("Scanned"),
-            new QStandardItem("1"),
+            new QStandardItem(QString::number(dir.count())),
             new QStandardItem("7/29/2019 8:32PM"),
-            new QStandardItem("7/29/2019 8:32PM"),
-            new QStandardItem(fileName)
+            new QStandardItem(fileInfo.lastModified().toString()),
+            new QStandardItem(folderPath),
         });
 
         this->watchModel->appendRow(watchRow);
 
         ui->statusBar->showMessage("Folder added to watchlist");
+        ui->watchTableView->resizeColumnsToContents();
     }
 
 
