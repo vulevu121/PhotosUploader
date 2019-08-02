@@ -73,7 +73,7 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->removeFolderButton, SIGNAL(clicked()), this, SLOT(removeFolders()));
     connect(ui->clearWatchlistButton, SIGNAL(clicked()), this, SLOT(clearWatchlist()));
 
-    connect(ui->actionCreateAlbum, SIGNAL(triggered()), this, SLOT(createAlbum()));
+    connect(ui->actionCreateAlbum, SIGNAL(triggered()), this, SLOT(showCreateAlbumDialog()));
 
 }
 
@@ -155,10 +155,14 @@ void MainWindow::clearWatchlist() {
     ui->statusBar->showMessage("Watchlist cleared");
 }
 
-void MainWindow::createAlbum() {
+void MainWindow::createAlbum(QString const &name, QString const &desc) {
+    qDebug() << name << desc;
+}
+
+void MainWindow::showCreateAlbumDialog() {
     CreateAlbumDialog *dialog = new CreateAlbumDialog();
     dialog->show();
-    qDebug() << "Create album";
+    connect(dialog, SIGNAL(createAlbumSignal(QString const &, QString const &)), this, SLOT(createAlbum(QString const &, QString const &)));
 }
 
 MainWindow::~MainWindow()
