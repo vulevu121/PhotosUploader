@@ -62,6 +62,7 @@ void GoogleOAuth2::AuthenticateReply(QNetworkReply *reply) {
         qDebug() << "Access Code request success!";
         QUrl url(reply->url());
         view = new QWebEngineView();
+ ;
         view->load(url);
 //        view->show();
         connect(view,SIGNAL(urlChanged(QUrl)),this,SLOT(AuthenticateRedirectReply(QUrl)));
@@ -71,7 +72,7 @@ void GoogleOAuth2::AuthenticateReply(QNetworkReply *reply) {
 }
 
 void GoogleOAuth2::AuthenticateRedirectReply(QUrl url) {
-    qDebug() << "Access Code Received!";
+    qDebug() << "Access Code Replied!";
     QString url_string(url.toString());
 //    qDebug() << url_string;
 
@@ -85,6 +86,8 @@ void GoogleOAuth2::AuthenticateRedirectReply(QUrl url) {
         authCode = list.at(1);
 //        qDebug() << authCode;
         emit authCodeReady();
+    }else{
+        qDebug() << "if access token doesnt display. May need to enable googleoauth2 view";
     }
 }
 

@@ -23,7 +23,7 @@ private:
     GoogleOAuth2 auth;
     QString accessToken;
     QString uploadToken;
-    QString uploadedPicURL;
+    QString uploadedPhotoURL;
     QString albumName;
     QString albumID;
     QString albumDescription;
@@ -70,6 +70,9 @@ public slots:
     bool isAlbumReady();
     void CreateMultipleMediaInAlbum();
 
+    QString GetAlbumName();
+    QString GetAlbumURL();
+    QString GetUploadedPhotoURL();
     /* This requires a different scope. Need to authenticate again*/
     QString GetAlbumID();
 };

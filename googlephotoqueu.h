@@ -14,6 +14,7 @@
 #include <QThread>
 #include <QFileSystemWatcher>
 #include <QDir>
+#include <QDateTime>
 #include "gmail.h"
 #include "googlephoto.h"
 
@@ -27,14 +28,14 @@ public:
     GooglePhoto  *p = nullptr;
     QTimer * timer1 = nullptr;
     QTimer * timer2 = nullptr;
+
     QJsonObject object ;
     QStringList uploadedList;
     QStringList uploadList;
-    QFileSystemWatcher * camera_folder_watcher = nullptr;
-    QFileSystemWatcher * template_folder_watcher = nullptr;
+    QJsonArray uploadedJsonList;
+
     bool isReady = true;
     QString pathToLog = "C:/Users/khuon/Documents/GooglePhoto/Upload Log.json";
-
 
 public slots:
     void CheckCameraFolder();
@@ -43,11 +44,11 @@ public slots:
     void OpenLog();
     void CloseLog();
     void begin();
-
+    void CreateNewAlbum(QString const,QString const);
+//    void UploadAPhoto(QString);
 
 
 private slots:
-    void CreateNewAlbum();
     void CameraFolderTimer();
     void UploadListTimer();
     void CameraFolderTimerStart();

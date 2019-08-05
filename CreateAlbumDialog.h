@@ -4,6 +4,7 @@
 #include <QDialog>
 #include <QDebug>
 
+
 namespace Ui {
 class CreateAlbumDialog;
 }

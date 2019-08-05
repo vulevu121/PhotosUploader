@@ -237,7 +237,7 @@ void GooglePhoto::CreateMediaReply(QNetworkReply *reply) {
         qDebug() << "Create Media Success!";
         QJsonDocument jsonDoc = QJsonDocument::fromJson(reply->readAll());
         QJsonObject jsonObj = jsonDoc.object();
-//        qDebug() << jsonObj["newMediaItemResults"].toArray()[0].toObject()["mediaItem"].toObject()["description"];
+        uploadedPhotoURL = jsonObj["newMediaItemResults"].toArray()[0].toObject()["mediaItem"].toObject()["productUrl"].toString();
         manager->disconnect();
         Uploading = false;
         manager->disconnect();
@@ -377,4 +377,16 @@ void GooglePhoto::GetAlbumsReply(QNetworkReply * reply){
 
 QString GooglePhoto::GetAlbumID(){
     return albumID;
+}
+
+QString GooglePhoto::GetAlbumName(){
+    return albumName;
+}
+
+QString GooglePhoto::GetAlbumURL(){
+    return albumURL;
+}
+
+QString GooglePhoto::GetUploadedPhotoURL(){
+    return uploadedPhotoURL;
 }

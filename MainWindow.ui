@@ -234,7 +234,7 @@
      <x>0</x>
      <y>0</y>
      <width>750</width>
-     <height>20</height>
+     <height>37</height>
     </rect>
    </property>
   </widget>
@@ -265,9 +265,9 @@
    <addaction name="separator"/>
    <addaction name="actionLogIn"/>
    <addaction name="actionLogOut"/>
-   <addaction name="actionEmail"/>
    <addaction name="separator"/>
    <addaction name="actionSetting"/>
+   <addaction name="actionEmail"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
   <action name="actionResume">

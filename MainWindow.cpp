@@ -10,14 +10,22 @@ MainWindow::MainWindow(QWidget *parent) :
 
     settingsDialog = new SettingsDialog();
 
-    QStringList queueHeader({
-        "Filename",
-        "Album",
-        "Status",
-        "Date Added",
-        "Date Modified",
-        "Path",
-    });
+//    QStringList queueHeader({
+//        "Filename",
+//        "Album",
+//        "Status",
+//        "Date Added",
+//        "Date Modified",
+//        "Path",
+//    });
+         queueHeader = QStringList({
+            "Filename",
+            "Album",
+            "Status",
+            "Date Added",
+            "Date Modified",
+            "Path",
+        });
     queueModel = new QStandardItemModel();
     queueModel->setHorizontalHeaderLabels(queueHeader);
 
@@ -35,7 +43,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
     ui->queueTableView->resizeColumnsToContents();
 
-    QStringList watchHeader({
+     watchHeader = QStringList({
         "Folder",
         "Status",
         "No. Files",
@@ -71,6 +79,8 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->clearWatchlistButton, SIGNAL(clicked()), this, SLOT(clearWatchlist()));
 
     connect(ui->actionCreateAlbum, SIGNAL(triggered()), this, SLOT(showCreateAlbumDialog()));
+    connect(ui->actionResume,SIGNAL(triggered()),this,SLOT(queueTimerStart()));
+    connect(ui->actionStop,SIGNAL(triggered()),this,SLOT(queueTimerStop()));
 
 }
 
@@ -122,12 +132,12 @@ void MainWindow::addFolder() {
     QString folderPath = fileDialog->getExistingDirectory(this, tr("Select folder"), "");
     QDir dir(folderPath);
     QFileInfo fileInfo(folderPath);
-    qDebug() << dir.count();
+//    qDebug() << dir.count();
 
     if (folderPath.length() > 0) {
         QList<QStandardItem *> watchRow({
             new QStandardItem(dir.dirName()),
-            new QStandardItem("Scanned"),
+            new QStandardItem("Queue"),
             new QStandardItem(QString::number(dir.count())),
             new QStandardItem("7/29/2019 8:32PM"),
             new QStandardItem(fileInfo.lastModified().toString()),
@@ -160,7 +170,18 @@ void MainWindow::clearWatchlist() {
 }
 
 void MainWindow::createAlbum(QString const &name, QString const &desc) {
+    gphoto = new GooglePhoto(this);
+    gphoto->SetAlbumName(name);
+    gphoto->SetAlbumDescription(desc);
+    connect(gphoto,SIGNAL(authenticated()),gphoto,SLOT(CreateAlbum()));
+    connect(gphoto,SIGNAL(albumCreated()),gphoto,SLOT(ShareAlbum()));
     qDebug() << name << desc;
+
+    queueTimerInit();
+    queueTimerStart();
+
+    folderTimerInit();
+    folderTimerStart();
 }
 
 void MainWindow::showCreateAlbumDialog() {
@@ -168,6 +189,125 @@ void MainWindow::showCreateAlbumDialog() {
     dialog->show();
     connect(dialog, SIGNAL(createAlbumSignal(QString const &, QString const &)), this, SLOT(createAlbum(QString const &, QString const &)));
 }
+
+
+void MainWindow::queueTimerStart(){
+    queueTimer->start(2000);
+}
+
+void MainWindow::queueTimerStop(){
+    queueTimer->stop();
+}
+
+void MainWindow::queueTimerInit(){
+    queueTimer = new QTimer(this);
+    connect(queueTimer,SIGNAL(timeout()),this,SLOT(queueUpload()));
+}
+
+void MainWindow::folderTimerStart(){
+    folderTimer->start(8000);
+}
+
+void MainWindow::folderTimerStop(){
+    folderTimer->stop();
+}
+
+void MainWindow::folderTimerInit(){
+    folderTimer = new QTimer(this);
+    connect(folderTimer,SIGNAL(timeout()),this,SLOT(folderScan()));
+}
+
+
+void MainWindow::queueUpload(){
+//     qDebug() << "Checking upload queue...";
+     /* Iterate through the rows in the model, if status is Queue, upload photo,
+      * If status is Completed, pass*/
+     for(int row = 0; row < queueModel->rowCount();row++){
+         if(queueModel->item(row,(queueHeader.indexOf("Status")))->text() == "Queue" && gphoto->isAlbumReady() && !gphoto->isUploading()){
+            QString file = queueModel->item(row,(queueHeader.indexOf("Path")))->text();
+            if(!uploadedList.contains(file)){
+            qDebug() << "Uploading" << file;
+            gphoto->UploadPhoto(file);
+
+            /* Update queue model */
+            queueModel->item(row,(queueHeader.indexOf("Status")))->setText("Completed");
+            queueModel->item(row,(queueHeader.indexOf("Album")))->setText(gphoto->GetAlbumName());
+
+            connect(gphoto,SIGNAL(mediaCreated(QString)),this,SLOT(updateUploadedList(QString)));
+            }
+          }else{
+//             qDebug() << "staus is not Queue for upload";
+        }
+     }
+}
+
+void MainWindow::updateUploadedList(QString filename){
+    QFileInfo info(filename);
+    QJsonObject obj;
+    obj["name"] = info.fileName();
+    obj["path"] = info.filePath();
+    obj["album_name"] = gphoto->GetAlbumName();
+    obj["album_url"] = gphoto->GetAlbumURL();
+    obj["status"] = "Completed";
+    obj["date_added"] = QDateTime::currentDateTime().toString();
+    obj["url"] = gphoto->GetUploadedPhotoURL();
+
+    uploadedListJson.append(obj);
+    uploadedList.append(filename);
+//    qDebug() << "After Uploaded list:" << uploadedList;
+//    qDebug() << "After Uploaded list:" << uploadedListJson;
+
+    isReady = true;
+}
+
+void MainWindow::folderScan(){
+//     qDebug() << "Scanning watched folder...";
+     /* Iterate through the rows in the watch folder model, if status is Queue, scan folder and add to queue,
+      * If status is Completed, pass*/
+     for(int row = 0; row < watchModel->rowCount();row++){
+         if(watchModel->item(row,(watchHeader.indexOf("Status")))->text() == "Queue" ){
+            QDir dir(watchModel->item(row,(watchHeader.indexOf("Path")))->text());
+            qDebug() << "Scanning foldler" << dir.path();
+            /* for each file in folder, if not in queue
+             * and uploadedList, add to queue */
+            QFileInfoList images = dir.entryInfoList(QStringList() << "*.jpg" << "*.JPG",QDir::Files);
+
+            foreach(QFileInfo i, images){
+            if (images.length() > 0 ) {
+                if(isReady && !uploadedList.contains(i.filePath())){
+                QList<QStandardItem *> queueRow({
+                    new QStandardItem(i.fileName()),
+                    new QStandardItem("None"),
+                    new QStandardItem("Queue"),
+                    new QStandardItem(i.birthTime().toString()),
+                    new QStandardItem(i.lastModified().toString()),
+                    new QStandardItem(i.filePath())
+                });
+
+                this->queueModel->appendRow(queueRow);
+                ui->statusBar->showMessage("Queue added");
+                ui->queueTableView->resizeColumnsToContents();
+                }
+            }
+         }
+//            watchModel->item(row,(watchHeader.indexOf("Status")))->setText("Scanned");
+            connect(gphoto,SIGNAL(mediaCreated(QString)),this,SLOT(updateUploadedList(QString)));
+            }
+     }
+}
+
+void MainWindow::emailLink(QString const &to, QString const &subject, QString const &body){
+     email = new GMAIL();
+     email->SetToEmail(to);
+     email->SetFromEmail("khuongnguyensac@gmail.com");
+     email->SetSubject(subject);
+     email->SetBody(body);
+     email->SetAlbumURL(gphoto->GetAlbumURL());
+     connect(email,SIGNAL(linkReady()),email,SLOT(SendEmail()));
+
+}
+
+
 
 MainWindow::~MainWindow()
 {
