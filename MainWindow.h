@@ -48,6 +48,7 @@ private slots:
 
     void updateUploadedList(QString);
     void emailLink(QString const &to, QString const &subject, QString const &body);
+    void saveLog();
 
 private:
     Ui::MainWindow *ui;

@@ -1,5 +1,20 @@
-{
-    "uploaded_photo": [
-        "rdm.jpg"
-    ]
-}
+[
+    {
+        "album_name": "asd",
+        "album_url": "https://photos.app.goo.gl/AeccjaxZGvjDeF9j6",
+        "date_added": "08/04/2019 11:29 PM",
+        "name": "1.jpg",
+        "path": "C:/Users/khuon/Documents/GooglePhoto/camera/1.jpg",
+        "status": "Completed",
+        "url": "https://photos.google.com/lr/album/AJIwpND2nS69oLEPqE4A9vECKuHmTmKAojKbGanRcolAUgLpe9li77pQI5D28wGsgyNQlRj3B0j3/photo/AJIwpNBn3JcLdkBNsJ3FlI6s5qR4Ni90J3rtqTVBCHJIh_7jb8Z5QfV4_OOpdD432Ms5JdzN3ixY3WNZBLmhfoznhSRj1c0Sbw"
+    },
+    {
+        "album_name": "asd",
+        "album_url": "https://photos.app.goo.gl/AeccjaxZGvjDeF9j6",
+        "date_added": "08/04/2019 11:29 PM",
+        "name": "2.jpg",
+        "path": "C:/Users/khuon/Documents/GooglePhoto/camera/2.jpg",
+        "status": "Completed",
+        "url": "https://photos.google.com/lr/album/AJIwpND2nS69oLEPqE4A9vECKuHmTmKAojKbGanRcolAUgLpe9li77pQI5D28wGsgyNQlRj3B0j3/photo/AJIwpNALgVm6nQuKQl4MpTHQ0Gimfh7ErERUAVMTsE47BOP7e-dYfZ8XQzUUblwI2HCTvRGmqImQKKboK5LmxEFCciEtMGKjbQ"
+    }
+]

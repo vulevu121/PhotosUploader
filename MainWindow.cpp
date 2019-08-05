@@ -81,7 +81,8 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->actionCreateAlbum, SIGNAL(triggered()), this, SLOT(showCreateAlbumDialog()));
     connect(ui->actionResume,SIGNAL(triggered()),this,SLOT(queueTimerStart()));
     connect(ui->actionStop,SIGNAL(triggered()),this,SLOT(queueTimerStop()));
-
+    connect(ui->actionResume,SIGNAL(triggered()),this,SLOT(folderTimerStart()));
+    connect(ui->actionStop,SIGNAL(triggered()),this,SLOT(folderTimerStop()));
 }
 
 void MainWindow::addQueue() {
@@ -96,7 +97,7 @@ void MainWindow::addQueue() {
             new QStandardItem(fileInfo.fileName()),
             new QStandardItem("MyAlbum"),
             new QStandardItem("Queue"),
-            new QStandardItem("7/29/2019 8:32PM"),
+            new QStandardItem(QDateTime::currentDateTime().toString("MM/dd/yyyy hh:mm AP")),
             new QStandardItem(fileInfo.lastModified().toString()),
             new QStandardItem(filePath)
         });
@@ -131,6 +132,8 @@ void MainWindow::addFolder() {
 
     QString folderPath = fileDialog->getExistingDirectory(this, tr("Select folder"), "");
     QDir dir(folderPath);
+    int num_files = dir.entryInfoList(QStringList() << "*.jpg" << "*.JPG",QDir::Files).length();
+
     QFileInfo fileInfo(folderPath);
 //    qDebug() << dir.count();
 
@@ -138,8 +141,9 @@ void MainWindow::addFolder() {
         QList<QStandardItem *> watchRow({
             new QStandardItem(dir.dirName()),
             new QStandardItem("Queue"),
-            new QStandardItem(QString::number(dir.count())),
-            new QStandardItem("7/29/2019 8:32PM"),
+//            new QStandardItem(QString::number(dir.count())),
+            new QStandardItem(QString::number(num_files)),
+            new QStandardItem(QDateTime::currentDateTime().toString("MM/dd/yyyy hh:mm AP")),
             new QStandardItem(fileInfo.lastModified().toString()),
             new QStandardItem(folderPath),
         });
@@ -182,6 +186,10 @@ void MainWindow::createAlbum(QString const &name, QString const &desc) {
 
     folderTimerInit();
     folderTimerStart();
+
+    /* Test saving log */
+    QTimer::singleShot(60000,this,SLOT(saveLog()));
+
 }
 
 void MainWindow::showCreateAlbumDialog() {
@@ -249,7 +257,7 @@ void MainWindow::updateUploadedList(QString filename){
     obj["album_name"] = gphoto->GetAlbumName();
     obj["album_url"] = gphoto->GetAlbumURL();
     obj["status"] = "Completed";
-    obj["date_added"] = QDateTime::currentDateTime().toString();
+    obj["date_added"] = QDateTime::currentDateTime().toString("MM/dd/yyyy hh:mm AP");
     obj["url"] = gphoto->GetUploadedPhotoURL();
 
     uploadedListJson.append(obj);
@@ -262,38 +270,61 @@ void MainWindow::updateUploadedList(QString filename){
 
 void MainWindow::folderScan(){
 //     qDebug() << "Scanning watched folder...";
-     /* Iterate through the rows in the watch folder model, if status is Queue, scan folder and add to queue,
-      * If status is Completed, pass*/
-     for(int row = 0; row < watchModel->rowCount();row++){
+    /* make a list of the files in the queue */
+    QStringList queue;
+    for(int row = 0; row < queueModel->rowCount();row++){
+        queue.append(queueModel->item(row,(queueHeader.indexOf("Path")))->text());
+    }
+    /* iterate the files in the folder */
+    for(int row = 0; row < watchModel->rowCount();row++){
          if(watchModel->item(row,(watchHeader.indexOf("Status")))->text() == "Queue" ){
             QDir dir(watchModel->item(row,(watchHeader.indexOf("Path")))->text());
             qDebug() << "Scanning foldler" << dir.path();
-            /* for each file in folder, if not in queue
-             * and uploadedList, add to queue */
+            /* for each file in folder, if not in queue  and uploadedList, add to queue */
             QFileInfoList images = dir.entryInfoList(QStringList() << "*.jpg" << "*.JPG",QDir::Files);
-
             foreach(QFileInfo i, images){
-            if (images.length() > 0 ) {
-                if(isReady && !uploadedList.contains(i.filePath())){
-                QList<QStandardItem *> queueRow({
-                    new QStandardItem(i.fileName()),
-                    new QStandardItem("None"),
-                    new QStandardItem("Queue"),
-                    new QStandardItem(i.birthTime().toString()),
-                    new QStandardItem(i.lastModified().toString()),
-                    new QStandardItem(i.filePath())
-                });
+                if (images.length() > 0 ) {
+                    if( !queue.contains(i.filePath()) && isReady && !uploadedList.contains(i.filePath())){
+                        QList<QStandardItem *> queueRow({
+                            new QStandardItem(i.fileName()),
+                            new QStandardItem("None"),
+                            new QStandardItem("Queue"),
+                            new QStandardItem(i.birthTime().toString()),
+                            new QStandardItem(i.lastModified().toString()),
+                            new QStandardItem(i.filePath())
+                        });
 
-                this->queueModel->appendRow(queueRow);
-                ui->statusBar->showMessage("Queue added");
-                ui->queueTableView->resizeColumnsToContents();
+                        this->queueModel->appendRow(queueRow);
+                        ui->statusBar->showMessage("Queue added");
+                        ui->queueTableView->resizeColumnsToContents();
+                    }
                 }
             }
-         }
+            watchModel->item(row,(watchHeader.indexOf("No. Files")))->setText(QString::number(images.length()));
+
 //            watchModel->item(row,(watchHeader.indexOf("Status")))->setText("Scanned");
             connect(gphoto,SIGNAL(mediaCreated(QString)),this,SLOT(updateUploadedList(QString)));
             }
      }
+}
+
+
+void MainWindow::saveLog(){
+    qDebug() << "Saving log";
+//    QString dir_path = camera_folder_path + "/";
+    QFile jsonFile("C:/Users/khuon/Documents/Github/PhotosUploader/Upload Log.json");
+    /* if log file does not exist, create a new one. Otherwise, overwrite */
+    if (jsonFile.open(QIODevice::WriteOnly)) {
+            QJsonDocument json_doc(uploadedListJson);
+            QString json_string = json_doc.toJson();
+
+            jsonFile.write(json_string.toLocal8Bit());
+            jsonFile.close();
+        }
+        else{
+            qDebug() << "failed to open save file" << endl;
+            return;
+        }
 }
 
 void MainWindow::emailLink(QString const &to, QString const &subject, QString const &body){
@@ -306,7 +337,6 @@ void MainWindow::emailLink(QString const &to, QString const &subject, QString co
      connect(email,SIGNAL(linkReady()),email,SLOT(SendEmail()));
 
 }
-
 
 
 MainWindow::~MainWindow()
