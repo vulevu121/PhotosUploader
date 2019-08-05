@@ -18,6 +18,8 @@ public:
     ~CreateAlbumDialog();
 public slots:
     void emitCreateAlbumSignal();
+    void toggleExistingAlbumOption(bool on);
+    void toggleNewAlbumOption(bool on);
 signals:
     void createAlbumSignal(QString const &name, QString const &desc);
 private:
