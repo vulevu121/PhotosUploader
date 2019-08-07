@@ -32,6 +32,8 @@ CONFIG += c++11
 
 SOURCES += \
         CreateAlbumDialog.cpp \
+        EmailTemplateDialog.cpp \
+        SMSTemplateDialog.cpp \
         SettingsDialog.cpp \
         gmail.cpp \
         googleoauth2.cpp \
@@ -42,7 +44,9 @@ SOURCES += \
 
 HEADERS += \
         CreateAlbumDialog.h \
+        EmailTemplateDialog.h \
         MainWindow.h \
+        SMSTemplateDialog.h \
         SettingsDialog.h \
         gmail.h \
         googleoauth2.h \
@@ -51,7 +55,9 @@ HEADERS += \
 
 FORMS += \
         CreateAlbumDialog.ui \
+        EmailTemplateDialog.ui \
         MainWindow.ui \
+        SMSTemplateDialog.ui \
         SettingsDialog.ui
 
 # Default rules for deployment.

@@ -234,7 +234,7 @@
      <x>0</x>
      <y>0</y>
      <width>750</width>
-     <height>37</height>
+     <height>20</height>
     </rect>
    </property>
   </widget>
@@ -244,8 +244,8 @@
    </property>
    <property name="iconSize">
     <size>
-     <width>32</width>
-     <height>32</height>
+     <width>24</width>
+     <height>24</height>
     </size>
    </property>
    <property name="floatable">
@@ -268,6 +268,7 @@
    <addaction name="separator"/>
    <addaction name="actionSetting"/>
    <addaction name="actionEmail"/>
+   <addaction name="actionSMS"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
   <action name="actionResume">
@@ -352,6 +353,15 @@
    </property>
    <property name="toolTip">
     <string>Email</string>
+   </property>
+  </action>
+  <action name="actionSMS">
+   <property name="icon">
+    <iconset resource="graphics.qrc">
+     <normaloff>:/icon/sms</normaloff>:/icon/sms</iconset>
+   </property>
+   <property name="text">
+    <string>SMS</string>
    </property>
   </action>
  </widget>

@@ -53,6 +53,8 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->actionStop,SIGNAL(triggered()),this,SLOT(queueTimerStop()));
     connect(ui->actionResume,SIGNAL(triggered()),this,SLOT(folderTimerStart()));
     connect(ui->actionStop,SIGNAL(triggered()),this,SLOT(folderTimerStop()));
+    connect(ui->actionEmail, SIGNAL(triggered()), this, SLOT(showEmailTemplate()));
+    connect(ui->actionSMS, SIGNAL(triggered()), this, SLOT(showSMSTemplate()));
 }
 
 void MainWindow::syncSettings() {
@@ -310,6 +312,16 @@ void MainWindow::emailLink(QString const &to, QString const &subject, QString co
      email->SetAlbumURL(gphoto->GetAlbumURL());
      connect(email,SIGNAL(linkReady()),email,SLOT(SendEmail()));
 
+}
+
+void MainWindow::showEmailTemplate() {
+    EmailTemplateDialog *emailDialog = new EmailTemplateDialog(this);
+    emailDialog->show();
+}
+
+void MainWindow::showSMSTemplate() {
+    SMSTemplateDialog *smsDialog = new SMSTemplateDialog(this);
+    smsDialog->show();
 }
 
 

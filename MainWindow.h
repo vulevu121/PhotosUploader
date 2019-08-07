@@ -11,6 +11,8 @@
 #include "SettingsDialog.h"
 #include "googlephotoqueu.h"
 #include "CreateAlbumDialog.h"
+#include "EmailTemplateDialog.h"
+#include "SMSTemplateDialog.h"
 
 namespace Ui {
 class MainWindow;
@@ -52,6 +54,8 @@ private slots:
     void saveLog();
 
     void syncSettings();
+    void showEmailTemplate();
+    void showSMSTemplate();
 
 private:
     Ui::MainWindow *ui;
