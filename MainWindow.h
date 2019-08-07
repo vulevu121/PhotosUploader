@@ -7,6 +7,7 @@
 #include <QFileDialog>
 #include <QDebug>
 #include <QDir>
+#include <QSettings>
 #include "SettingsDialog.h"
 #include "googlephotoqueu.h"
 #include "CreateAlbumDialog.h"
@@ -50,6 +51,8 @@ private slots:
     void emailLink(QString const &to, QString const &subject, QString const &body);
     void saveLog();
 
+    void syncSettings();
+
 private:
     Ui::MainWindow *ui;
     SettingsDialog *settingsDialog = nullptr;
@@ -68,6 +71,7 @@ private:
     bool isReady = true;
     GMAIL *email = nullptr;
 
+    QSettings *settings = new QSettings("Pixyl", "PixylLibrary");
 };
 
 #endif // MAINWINDOW_H
