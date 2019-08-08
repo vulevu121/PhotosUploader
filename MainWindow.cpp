@@ -157,16 +157,16 @@ void MainWindow::clearWatchlist() {
     ui->statusBar->showMessage("Watchlist cleared");
 }
 
-void MainWindow::createAlbum(QString const &name, QString const &desc, QString const &albumId, bool newExistingAlbum) {
+void MainWindow::createAlbum(QString const &name, QString const &desc, QString const &albumId, bool useExistingAlbum) {
     gphoto = new GooglePhoto(this);
-    if(!newExistingAlbum){
+    if (useExistingAlbum) {
+        gphoto->SetTargetAlbumToUpload(albumId);
+    } else {
         gphoto->SetAlbumName(name);
         gphoto->SetAlbumDescription(desc);
         connect(gphoto,SIGNAL(authenticated()),gphoto,SLOT(CreateAlbum()));
         connect(gphoto,SIGNAL(albumCreated()),gphoto,SLOT(ShareAlbum()));
-//        connect(gphoto,SIGNAL(showMessage(QString const &)), ui->statusBar, SLOT(showMessage(QString const &)));
-    }else{
-        gphoto->SetTargetAlbumToUpload(albumId);
+        //        connect(gphoto,SIGNAL(showMessage(QString const &)), ui->statusBar, SLOT(showMessage(QString const &)));
     }
     connect(gphoto,SIGNAL(showMessage(QString const &)), ui->statusBar, SLOT(showMessage(QString const &)));
     qDebug() << name << desc;
@@ -178,7 +178,7 @@ void MainWindow::createAlbum(QString const &name, QString const &desc, QString c
     folderTimerStart();
 
     /* Test saving log */
-//    QTimer::singleShot(60000,this,SLOT(saveLog()));
+    QTimer::singleShot(60000,this,SLOT(saveLog()));
 
 }
 

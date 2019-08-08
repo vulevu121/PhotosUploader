@@ -11,7 +11,7 @@ CreateAlbumDialog::CreateAlbumDialog(QWidget *parent) :
     connect(ui->newAlbumGroupbox, SIGNAL(toggled(bool)), this, SLOT(toggleExistingAlbumOption(bool)));
     connect(ui->existingAlbumGroupbox, SIGNAL(toggled(bool)), this, SLOT(toggleNewAlbumOption(bool)));
 
-    newExistingAlbum = ui->existingAlbumGroupbox->isChecked();
+    useExistingAlbum = ui->existingAlbumGroupbox->isChecked();
 //    qDebug() << newExistingAlbum;
 }
 
@@ -27,13 +27,13 @@ void CreateAlbumDialog::emitCreateAlbumSignal() {
                 ui->albumNameEdit->text(),
                 ui->albumDescEdit->text(),
                 ui->existingAlbumIdEdit->text(),
-                newExistingAlbum
+                useExistingAlbum
                 );
 }
 
 void CreateAlbumDialog::toggleExistingAlbumOption(bool on) {
     ui->existingAlbumGroupbox->setChecked(!on);
-    newExistingAlbum = ui->existingAlbumGroupbox->isChecked();
+    useExistingAlbum = ui->existingAlbumGroupbox->isChecked();
 //    qDebug() << newExistingAlbum;
 }
 
