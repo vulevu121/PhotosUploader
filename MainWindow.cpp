@@ -83,6 +83,12 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->actionStop,SIGNAL(triggered()),this,SLOT(queueTimerStop()));
     connect(ui->actionResume,SIGNAL(triggered()),this,SLOT(folderTimerStart()));
     connect(ui->actionStop,SIGNAL(triggered()),this,SLOT(folderTimerStop()));
+
+    /* Use for testing oauth2 only*/
+//    gphoto = new GooglePhoto(this);
+//    QTimer::singleShot(30000,gphoto,SLOT(Reauthenticate()));
+
+
 }
 
 void MainWindow::addQueue() {
@@ -179,6 +185,10 @@ void MainWindow::createAlbum(QString const &name, QString const &desc) {
     gphoto->SetAlbumDescription(desc);
     connect(gphoto,SIGNAL(authenticated()),gphoto,SLOT(CreateAlbum()));
     connect(gphoto,SIGNAL(albumCreated()),gphoto,SLOT(ShareAlbum()));
+    connect(gphoto,SIGNAL(showMessage(QString const &)), ui->statusBar, SLOT(showMessage(QString const &)));
+
+//    ui->statusBar->showMessage("Queue added");
+
     qDebug() << name << desc;
 
     queueTimerInit();
@@ -188,7 +198,7 @@ void MainWindow::createAlbum(QString const &name, QString const &desc) {
     folderTimerStart();
 
     /* Test saving log */
-    QTimer::singleShot(60000,this,SLOT(saveLog()));
+//    QTimer::singleShot(60000,this,SLOT(saveLog()));
 
 }
 

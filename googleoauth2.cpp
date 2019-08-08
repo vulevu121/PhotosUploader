@@ -1,7 +1,12 @@
 #include "googleoauth2.h"
 
 GoogleOAuth2::GoogleOAuth2(QObject *parent) : QObject(parent)
-{
+{   /* Initilize once when the class is created */
+    view = new QWebEngineView();
+    profile = new QWebEngineProfile();
+    profile->setPersistentCookiesPolicy(QWebEngineProfile::AllowPersistentCookies);
+    page = new QWebEnginePage(profile);
+
     connect(this, SIGNAL(authCodeReady()),this,SLOT(ExchangeAccessToken()));
 }
 void GoogleOAuth2::SetScope(QString RequestScope){
@@ -61,18 +66,25 @@ void GoogleOAuth2::AuthenticateReply(QNetworkReply *reply) {
     } else {
         qDebug() << "Access Code request success!";
         QUrl url(reply->url());
-        view = new QWebEngineView();
- ;
-        view->load(url);
-//        view->show();
+
+        /* This will not save cookie for this session */
+        view->setPage(page);
+        view->setUrl(url);
+        view->show();
+        view->disconnect();
         connect(view,SIGNAL(urlChanged(QUrl)),this,SLOT(AuthenticateRedirectReply(QUrl)));
+
+        /* This will store cookies for future session*/
+//        view->load(url);
+//        view->show();
+//        connect(view,SIGNAL(urlChanged(QUrl)),this,SLOT(AuthenticateRedirectReply(QUrl)));
     }
     manager->disconnect();
 
 }
 
 void GoogleOAuth2::AuthenticateRedirectReply(QUrl url) {
-    qDebug() << "Access Code Replied!";
+    qDebug() << "Access Code Request Replied!";
     QString url_string(url.toString());
 //    qDebug() << url_string;
 
@@ -87,7 +99,7 @@ void GoogleOAuth2::AuthenticateRedirectReply(QUrl url) {
 //        qDebug() << authCode;
         emit authCodeReady();
     }else{
-        qDebug() << "if access token doesnt display. May need to enable googleoauth2 view";
+//        qDebug() << "if access token doesnt display. May need to enable googleoauth2 view";
     }
 }
 
@@ -117,7 +129,7 @@ void GoogleOAuth2::ExchangeTokenReply(QNetworkReply *reply) {
         QByteArray response = reply->readAll();
         QJsonDocument jsonDoc = QJsonDocument::fromJson(response);
         QJsonObject jsonObject = jsonDoc.object();
-        qDebug() << jsonObject["error"].toObject()["message"].toString();
+//        qDebug() << jsonObject["error"].toObject()["message"].toString();
         manager->disconnect();
 
     } else {
@@ -133,7 +145,7 @@ void GoogleOAuth2::ExchangeTokenReply(QNetworkReply *reply) {
         APPARENTLY, THE RESPONSE DOES NOT CONTAIN REFRESH TOKEN
         Just have to Authenticate() after the expire time*/
 
-        qDebug() << "Expire in" << expireTime;
+//        qDebug() << "Expire in" << expireTime;
         QTimer::singleShot(expireTime*1000 - cautionOffset,this,SLOT(Authenticate())); // Conversion to milisecond
         /* Use for testing only */
 //        QTimer::singleShot(expireTime*2,this,SLOT(Authenticate())); // Conversion to milisecond
@@ -142,8 +154,9 @@ void GoogleOAuth2::ExchangeTokenReply(QNetworkReply *reply) {
         /* disconnext previous connect */
         manager->disconnect();
         emit tokenReady(accessToken);
-
     }
+    /* Close Web view after log in */
+    view->close();
 }
 /* Note that there are limits on the number of refresh tokens that will be issued;
  * one limit per client/user combination, and another per user across all clients*/
@@ -164,7 +177,7 @@ void GoogleOAuth2::RefreshAccessToken(){
     QNetworkRequest req(urlToken);
     req.setRawHeader("Content-Type","application/x-www-form-urlencoded");
 
-    qDebug() << urlToken;
+//    qDebug() << urlToken;
     QByteArray data;
     manager->post(req,data);
 

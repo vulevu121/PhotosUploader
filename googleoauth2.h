@@ -13,6 +13,8 @@
 #include <QWebEngineView>
 #include <QDeadlineTimer>
 #include <QTimer>
+#include <QWebEngineProfile>
+#include <QWebEnginePage>
 
 class GoogleOAuth2 : public QObject
 {
@@ -23,6 +25,8 @@ public:
 private:
     QNetworkAccessManager *manager = nullptr;
     QWebEngineView *view = nullptr;
+    QWebEngineProfile * profile;
+    QWebEnginePage * page;
 
     QJsonObject settingsObject;
     QString jsonFilePath = QString("C:/Users/khuon/Documents/GitHub/PhotosUploader/client_secret_1044474243779-a1gndnc2as4cc5c6ufksmbetoafi5mcr.apps.googleusercontent.com.json");

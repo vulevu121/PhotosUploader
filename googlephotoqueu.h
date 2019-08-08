@@ -45,7 +45,6 @@ public slots:
     void CloseLog();
     void begin();
     void CreateNewAlbum(QString const,QString const);
-//    void UploadAPhoto(QString);
 
 
 private slots:

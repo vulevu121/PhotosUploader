@@ -43,6 +43,7 @@ signals:
     void albumIdChanged();
     void mediaCreated(QString);
     void pathToFileChanged(QString);
+    void showMessage(QString const &msg);
 
 private slots:
     void SetAccessToken(QString token);
@@ -69,6 +70,8 @@ public slots:
     bool isUploading();
     bool isAlbumReady();
     void CreateMultipleMediaInAlbum();
+    /* Use for testing oauth2 only */
+    void Reauthenticate();
 
     QString GetAlbumName();
     QString GetAlbumURL();

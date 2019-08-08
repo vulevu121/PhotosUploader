@@ -32,7 +32,6 @@ private slots:
     void addFolder();
     void removeFolders();
     void clearWatchlist();
-//    void createAlbum(QString const &name, QString const &desc);
     void createAlbum(QString const &name, QString const &desc);
 
     void showCreateAlbumDialog();

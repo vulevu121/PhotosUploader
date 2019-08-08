@@ -7,6 +7,7 @@ GooglePhoto::GooglePhoto(QObject *parent) : QObject(parent)
     auth.SetScope();        // default scope is google photo
     auth.Authenticate();   //Share scope cannot querry for list of albums from Google Photo
     connect(&auth,SIGNAL(tokenReady(QString)),this,SLOT(SetAccessToken(QString)));
+
 }
 
 
@@ -224,6 +225,7 @@ void GooglePhoto::CreateMediaInAlbum(QString token){
 
     manager->post(req,jsonRequest);
 
+
     connect(this->manager, SIGNAL(finished(QNetworkReply*)),
             this, SLOT(CreateMediaReply(QNetworkReply*)));
 }
@@ -242,6 +244,7 @@ void GooglePhoto::CreateMediaReply(QNetworkReply *reply) {
         Uploading = false;
         manager->disconnect();
         emit mediaCreated(fileName);
+
     }
 
 }
@@ -291,7 +294,7 @@ void GooglePhoto::CreateAlbumReply(QNetworkReply * reply){
 //        qDebug() << "Album link:" << albumURL;
         manager->disconnect();
         emit albumCreated();
-
+        emit showMessage("Album created successfully");
      }
 }
 
@@ -373,6 +376,12 @@ void GooglePhoto::GetAlbumsReply(QNetworkReply * reply){
 
      }
     manager->disconnect();
+}
+
+void GooglePhoto::Reauthenticate(){
+    auth.Authenticate();   //Share scope cannot querry for list of albums from Google Photo
+    connect(&auth,SIGNAL(tokenReady(QString)),this,SLOT(SetAccessToken(QString)));
+
 }
 
 QString GooglePhoto::GetAlbumID(){
