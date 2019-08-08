@@ -14,6 +14,8 @@ GooglePhoto::GooglePhoto(QObject *parent) : QObject(parent)
 void GooglePhoto::SetTargetAlbumToUpload(QString id){
     albumID = id;
     emit albumIdChanged();
+    emit showMessage("Album connected successfully");
+
 //    qDebug() << albumID;
 }
 

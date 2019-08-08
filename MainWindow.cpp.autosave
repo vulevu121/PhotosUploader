@@ -178,7 +178,7 @@ void MainWindow::createAlbum(QString const &name, QString const &desc, QString c
     folderTimerStart();
 
     /* Test saving log */
-//    QTimer::singleShot(60000,this,SLOT(saveLog()));
+    QTimer::singleShot(60000,this,SLOT(saveLog()));
 
 }
 

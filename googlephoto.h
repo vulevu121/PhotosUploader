@@ -57,7 +57,6 @@ private slots:
     void CreateMediaReply(QNetworkReply *reply);
     void GetAlbums();
     void GetAlbumsReply(QNetworkReply * reply);
-    void SetTargetAlbumToUpload(QString id);
     void AppendUploadTokenList(QString);
 
 
@@ -70,6 +69,8 @@ public slots:
     bool isUploading();
     bool isAlbumReady();
     void CreateMultipleMediaInAlbum();
+    void SetTargetAlbumToUpload(QString id);
+
     /* Use for testing oauth2 only */
     void Reauthenticate();
 

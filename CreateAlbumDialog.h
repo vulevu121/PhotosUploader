@@ -16,12 +16,14 @@ class CreateAlbumDialog : public QDialog
 public:
     explicit CreateAlbumDialog(QWidget *parent = nullptr);
     ~CreateAlbumDialog();
+    bool newExistingAlbum;
 public slots:
     void emitCreateAlbumSignal();
     void toggleExistingAlbumOption(bool on);
     void toggleNewAlbumOption(bool on);
 signals:
-    void createAlbumSignal(QString const &name, QString const &desc);
+    void createAlbumSignal(QString const &name, QString const &desc, QString const &albumId, bool newExistingAlbum);
+
 private:
     Ui::CreateAlbumDialog *ui;
 };
