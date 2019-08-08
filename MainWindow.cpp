@@ -161,6 +161,8 @@ void MainWindow::createAlbum(QString const &name, QString const &desc, QString c
     gphoto = new GooglePhoto(this);
     if (useExistingAlbum) {
         gphoto->SetTargetAlbumToUpload(albumId);
+        qDebug() << gphoto->GetAlbumID();
+
     } else {
         gphoto->SetAlbumName(name);
         gphoto->SetAlbumDescription(desc);
@@ -168,9 +170,6 @@ void MainWindow::createAlbum(QString const &name, QString const &desc, QString c
         connect(gphoto,SIGNAL(albumCreated()),gphoto,SLOT(ShareAlbum()));
         //        connect(gphoto,SIGNAL(showMessage(QString const &)), ui->statusBar, SLOT(showMessage(QString const &)));
     }
-    connect(gphoto,SIGNAL(showMessage(QString const &)), ui->statusBar, SLOT(showMessage(QString const &)));
-    qDebug() << name << desc;
-
     queueTimerInit();
     queueTimerStart();
 
@@ -179,6 +178,9 @@ void MainWindow::createAlbum(QString const &name, QString const &desc, QString c
 
     /* Test saving log */
     QTimer::singleShot(60000,this,SLOT(saveLog()));
+
+    /* Show message */
+    connect(gphoto,SIGNAL(showMessage(QString const &)), ui->statusBar, SLOT(showMessage(QString const &)));
 
 }
 
@@ -190,6 +192,7 @@ void MainWindow::showCreateAlbumDialog() {
 
 
 void MainWindow::queueTimerStart(){
+    qDebug() << "queue timer start";
     queueTimer->start(2000);
 }
 
@@ -203,6 +206,8 @@ void MainWindow::queueTimerInit(){
 }
 
 void MainWindow::folderTimerStart(){
+    qDebug() << "folder timer start";
+
     folderTimer->start(8000);
 }
 

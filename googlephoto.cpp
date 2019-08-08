@@ -2,10 +2,9 @@
 
 GooglePhoto::GooglePhoto(QObject *parent) : QObject(parent)
 {
-//    auth.SetScopeRaw("https://www.googleapis.com/auth/photoslibrary"); // for list album
 
     auth.SetScope();        // default scope is google photo
-    auth.Authenticate();   //Share scope cannot querry for list of albums from Google Photo
+    auth.Authenticate();
     connect(&auth,SIGNAL(tokenReady(QString)),this,SLOT(SetAccessToken(QString)));
 
 }
@@ -13,10 +12,45 @@ GooglePhoto::GooglePhoto(QObject *parent) : QObject(parent)
 
 void GooglePhoto::SetTargetAlbumToUpload(QString id){
     albumID = id;
-    emit albumIdChanged();
-    emit showMessage("Album connected successfully");
+    connect(this,SIGNAL(authenticated()),this,SLOT(GetAlbumById()));
+//    emit albumIdChanged(albumID);
 
-//    qDebug() << albumID;
+}
+
+
+void GooglePhoto::GetAlbumById(){
+    qDebug() << "Getting album by ID:" << albumID;
+    if (manager == nullptr) {
+        manager = new QNetworkAccessManager(this);
+    }
+    QUrl endpoint(QString("https://photoslibrary.googleapis.com/v1/albums/%1").arg(albumID));
+    QNetworkRequest req(endpoint);
+    req.setRawHeader("Authorization","Bearer "+ accessToken.toUtf8());
+    manager->get(req);
+
+    connect(this->manager, SIGNAL(finished(QNetworkReply*)),
+            this, SLOT(GetAlbumByIdReply(QNetworkReply*)));
+
+}
+
+void GooglePhoto::GetAlbumByIdReply(QNetworkReply * reply){
+    if(reply->error()) {
+        qDebug() << "Get album by ID Error" << reply->readAll();
+        manager->disconnect();
+        emit showMessage("Album NOT connected");
+
+    } else {
+
+        QJsonDocument jsonDoc = QJsonDocument::fromJson(reply->readAll());
+        QJsonObject jsonObj = jsonDoc.object();
+
+        albumURL = jsonObj["productUrl"].toString();
+        albumName= jsonObj["title"].toString();
+        manager->disconnect();
+        albumReady = true;
+        emit showMessage("Album connected successfully");
+     }
+
 }
 
 

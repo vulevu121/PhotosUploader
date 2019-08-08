@@ -40,7 +40,7 @@ signals:
     void uploadTokenReceived(QString);
     void albumCreated();
     void albumShared(QString);
-    void albumIdChanged();
+    void albumIdChanged(QString);
     void mediaCreated(QString);
     void pathToFileChanged(QString);
     void showMessage(QString const &msg);
@@ -58,6 +58,8 @@ private slots:
     void GetAlbums();
     void GetAlbumsReply(QNetworkReply * reply);
     void AppendUploadTokenList(QString);
+    void GetAlbumById();
+    void GetAlbumByIdReply(QNetworkReply * reply);
 
 
 public slots:
@@ -70,7 +72,6 @@ public slots:
     bool isAlbumReady();
     void CreateMultipleMediaInAlbum();
     void SetTargetAlbumToUpload(QString id);
-
     /* Use for testing oauth2 only */
     void Reauthenticate();
 

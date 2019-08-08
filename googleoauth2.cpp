@@ -2,10 +2,10 @@
 
 GoogleOAuth2::GoogleOAuth2(QObject *parent) : QObject(parent)
 {   /* Initilize once when the class is created */
-    view = new QWebEngineView();
-    profile = new QWebEngineProfile();
-    profile->setPersistentCookiesPolicy(QWebEngineProfile::AllowPersistentCookies);
-    page = new QWebEnginePage(profile);
+//    view = new QWebEngineView();
+//    profile = new QWebEngineProfile();
+//    profile->setPersistentCookiesPolicy(QWebEngineProfile::AllowPersistentCookies);
+//    page = new QWebEnginePage(profile);
 
     connect(this, SIGNAL(authCodeReady()),this,SLOT(ExchangeAccessToken()));
 }
@@ -13,10 +13,10 @@ void GoogleOAuth2::SetScope(QString RequestScope){
 
     if(RequestScope == "GMAIL"){
         qDebug() << "Scope for Gmail";
-        scope = QString("?scope=https://www.googleapis.com/auth/gmail.send"); // Create, read, update, and delete drafts. Send messages and drafts.
+        scope = QString("?scope=https://www.googleapis.com/auth/gmail.send "); // Create, read, update, and delete drafts. Send messages and drafts.
     }else{
         qDebug() << "Scope for Google Photo";
-        scope = QString("?scope=https://www.googleapis.com/auth/photoslibrary.sharing"); // scope for sharing
+        scope = QString("?scope=https://www.googleapis.com/auth/photoslibrary.sharing https://www.googleapis.com/auth/photoslibrary"); // scope for sharing
     }
     emit scopeSet();
 }
@@ -68,16 +68,17 @@ void GoogleOAuth2::AuthenticateReply(QNetworkReply *reply) {
         QUrl url(reply->url());
 
         /* This will not save cookie for this session */
-        view->setPage(page);
-        view->setUrl(url);
-        view->show();
-        view->disconnect();
-        connect(view,SIGNAL(urlChanged(QUrl)),this,SLOT(AuthenticateRedirectReply(QUrl)));
+//        view->setPage(page);
+//        view->setUrl(url);
+//        view->show();
+//        view->disconnect();
+//        connect(view,SIGNAL(urlChanged(QUrl)),this,SLOT(AuthenticateRedirectReply(QUrl)));
 
         /* This will store cookies for future session*/
-//        view->load(url);
-//        view->show();
-//        connect(view,SIGNAL(urlChanged(QUrl)),this,SLOT(AuthenticateRedirectReply(QUrl)));
+        view = new QWebEngineView();
+        view->load(url);
+        view->show();
+        connect(view,SIGNAL(urlChanged(QUrl)),this,SLOT(AuthenticateRedirectReply(QUrl)));
     }
     manager->disconnect();
 
