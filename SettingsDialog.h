@@ -2,6 +2,7 @@
 #define SETTINGSDIALOG_H
 
 #include <QDialog>
+#include <QSettings>
 
 namespace Ui {
 class SettingsDialog;
@@ -15,8 +16,13 @@ public:
     explicit SettingsDialog(QWidget *parent = nullptr);
     ~SettingsDialog();
 
-private:
     Ui::SettingsDialog *ui;
+private:
+    QSettings *settings = new QSettings("Pixyl", "PixylLibrary");
+public slots:
+    void saveSettings();
+signals:
+    void settingsSaved();
 };
 
 #endif // SETTINGSDIALOG_H

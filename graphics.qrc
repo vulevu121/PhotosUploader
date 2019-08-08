@@ -25,7 +25,7 @@
         <file alias="remove">Images/1x/outline_remove_white_48dp.png</file>
         <file alias="send">Images/1x/outline_send_white_48dp.png</file>
         <file>Images/1x/outline_settings_backup_restore_white_48dp.png</file>
-        <file>Images/1x/outline_textsms_white_48dp.png</file>
+        <file alias="sms">Images/1x/outline_textsms_white_48dp.png</file>
         <file alias="setting">Images/1x/outline_tune_white_48dp.png</file>
         <file>Images/1x/outline_video_library_white_48dp.png</file>
         <file>Images/1x/outline_zoom_in_white_48dp.png</file>

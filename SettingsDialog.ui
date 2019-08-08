@@ -29,35 +29,35 @@
       </attribute>
       <layout class="QVBoxLayout" name="verticalLayout_2">
        <item>
-        <widget class="QCheckBox" name="checkBox">
+        <widget class="QCheckBox" name="startScanningStartup">
          <property name="text">
           <string>Start scanning on startup</string>
          </property>
         </widget>
        </item>
        <item>
-        <widget class="QCheckBox" name="checkBox_2">
+        <widget class="QCheckBox" name="startMinimizedInTray">
          <property name="text">
           <string>Start minimized in tray</string>
          </property>
         </widget>
        </item>
        <item>
-        <widget class="QCheckBox" name="checkBox_3">
+        <widget class="QCheckBox" name="showPreviewUpload">
          <property name="text">
           <string>Show preview while uploading</string>
          </property>
         </widget>
        </item>
        <item>
-        <widget class="QCheckBox" name="checkBox_4">
+        <widget class="QCheckBox" name="playChimeUploadFinish">
          <property name="text">
           <string>Play chime when an upload finishes</string>
          </property>
         </widget>
        </item>
        <item>
-        <widget class="QCheckBox" name="checkBox_5">
+        <widget class="QCheckBox" name="saveQueueExit">
          <property name="text">
           <string>Save queue on exit</string>
          </property>
@@ -71,7 +71,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QSpinBox" name="spinBox">
+        <widget class="QSpinBox" name="scanningInterval">
          <property name="suffix">
           <string> sec(s)</string>
          </property>
@@ -97,12 +97,12 @@
         </widget>
        </item>
        <item>
-        <widget class="QSpinBox" name="spinBox_3">
+        <widget class="QSpinBox" name="onErrorRetries">
          <property name="suffix">
           <string> attempt(s)</string>
          </property>
          <property name="prefix">
-          <string>Try </string>
+          <string>Retry </string>
          </property>
          <property name="minimum">
           <number>1</number>
@@ -113,7 +113,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QSpinBox" name="spinBox_2">
+        <widget class="QSpinBox" name="onErrorAttemptInterval">
          <property name="suffix">
           <string> sec(s)</string>
          </property>

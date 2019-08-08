@@ -8,42 +8,25 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
 
-    settingsDialog = new SettingsDialog();
+    QSettings settings("Pixyl", "PixylBooth");
 
-//    QStringList queueHeader({
-//        "Filename",
-//        "Album",
-//        "Status",
-//        "Date Added",
-//        "Date Modified",
-//        "Path",
-//    });
-         queueHeader = QStringList({
-            "Filename",
-            "Album",
-            "Status",
-            "Date Added",
-            "Date Modified",
-            "Path",
-        });
+    settingsDialog = new SettingsDialog(this);
+    connect(settingsDialog, SIGNAL(settingsSaved()), this, SLOT(syncSettings()));
+
+    queueHeader = QStringList({
+        "Filename",
+        "Album",
+        "Status",
+        "Date Added",
+        "Date Modified",
+        "Path",
+    });
     queueModel = new QStandardItemModel();
     queueModel->setHorizontalHeaderLabels(queueHeader);
-
     ui->queueTableView->setModel(queueModel);
-
-//    QList<QStandardItem *> queueRow({
-//        new QStandardItem("photo.jpg"),
-//        new QStandardItem("MyAlbum"),
-//        new QStandardItem("Queue"),
-//        new QStandardItem("7/29/2019 8:32PM"),
-//        new QStandardItem("/home/pictures/photo.jpg")
-//    });
-
-//    queueModel->appendRow(queueRow);
-
     ui->queueTableView->resizeColumnsToContents();
 
-     watchHeader = QStringList({
+    watchHeader = QStringList({
         "Folder",
         "Status",
         "No. Files",
@@ -53,20 +36,7 @@ MainWindow::MainWindow(QWidget *parent) :
     });
     watchModel = new QStandardItemModel();
     watchModel->setHorizontalHeaderLabels(watchHeader);
-
     ui->watchTableView->setModel(watchModel);
-
-//    QList<QStandardItem *> watchRow({
-//        new QStandardItem("MyPictures"),
-//        new QStandardItem("Scanned"),
-//        new QStandardItem("1"),
-//        new QStandardItem("7/29/2019 8:32PM"),
-//        new QStandardItem("7/29/2019 8:32PM"),
-//        new QStandardItem("/home/My Pictures")
-//    });
-
-//    watchModel->appendRow(watchRow);
-
 
     ui->watchTableView->resizeColumnsToContents();
     connect(ui->addQueueButton, SIGNAL(clicked()), this, SLOT(addQueue()));
@@ -89,10 +59,18 @@ MainWindow::MainWindow(QWidget *parent) :
 //    QTimer::singleShot(30000,gphoto,SLOT(Reauthenticate()));
 
 
+
+    connect(ui->actionEmail, SIGNAL(triggered()), this, SLOT(showEmailTemplate()));
+    connect(ui->actionSMS, SIGNAL(triggered()), this, SLOT(showSMSTemplate()));
+}
+
+void MainWindow::syncSettings() {
+    qDebug() << settings->value("scanningInterval", "10").toString();
+
 }
 
 void MainWindow::addQueue() {
-    QFileDialog *fileDialog = new QFileDialog();
+    QFileDialog *fileDialog = new QFileDialog(this);
 
     QString filePath = fileDialog->getOpenFileName(this, tr("Select folder"), "", tr("Images (*.png *.jpg)"));
     QFileInfo fileInfo(filePath);
@@ -134,7 +112,7 @@ void MainWindow::clearQueue() {
 
 
 void MainWindow::addFolder() {
-    QFileDialog *fileDialog = new QFileDialog();
+    QFileDialog *fileDialog = new QFileDialog(this);
 
     QString folderPath = fileDialog->getExistingDirectory(this, tr("Select folder"), "");
     QDir dir(folderPath);
@@ -203,7 +181,7 @@ void MainWindow::createAlbum(QString const &name, QString const &desc) {
 }
 
 void MainWindow::showCreateAlbumDialog() {
-    CreateAlbumDialog *dialog = new CreateAlbumDialog();
+    CreateAlbumDialog *dialog = new CreateAlbumDialog(this);
     dialog->show();
     connect(dialog, SIGNAL(createAlbumSignal(QString const &, QString const &)), this, SLOT(createAlbum(QString const &, QString const &)));
 }
@@ -346,6 +324,16 @@ void MainWindow::emailLink(QString const &to, QString const &subject, QString co
      email->SetAlbumURL(gphoto->GetAlbumURL());
      connect(email,SIGNAL(linkReady()),email,SLOT(SendEmail()));
 
+}
+
+void MainWindow::showEmailTemplate() {
+    EmailTemplateDialog *emailDialog = new EmailTemplateDialog(this);
+    emailDialog->show();
+}
+
+void MainWindow::showSMSTemplate() {
+    SMSTemplateDialog *smsDialog = new SMSTemplateDialog(this);
+    smsDialog->show();
 }
 
 
