@@ -3,7 +3,7 @@
 
 #include <QDialog>
 #include <QDebug>
-
+#include <QString>
 
 namespace Ui {
 class CreateAlbumDialog;

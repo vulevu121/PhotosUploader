@@ -50,7 +50,7 @@ private slots:
     void folderTimerStop();
 
     void updateUploadedList(QString);
-    void emailLink(QString const &to, QString const &subject, QString const &body);
+    void sendNow(QString const &to, QString const &subject, QString const &body);
     void saveLog();
 
     void syncSettings();
@@ -74,6 +74,8 @@ private:
     QJsonArray uploadedListJson;
     bool isReady = true;
     GMAIL *email = nullptr;
+
+
 
     QSettings *settings = new QSettings("Pixyl", "PixylLibrary");
 };

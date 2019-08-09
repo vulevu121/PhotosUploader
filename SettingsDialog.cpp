@@ -16,6 +16,13 @@ SettingsDialog::SettingsDialog(QWidget *parent) :
 void SettingsDialog::saveSettings() {
     settings->setValue("onErrorRetries", ui->onErrorRetries->value());
     settings->setValue("scanningInterval", ui->scanningInterval->value());
+    settings->setValue("onErrorAttemptInterval", ui->onErrorAttemptInterval->value());
+    settings->setValue("playChimeUploadFinish",ui->playChimeUploadFinish->isChecked());
+    settings->setValue("saveQueueExit",ui->saveQueueExit->isChecked());
+    settings->setValue("showPreviewUpload",ui->showPreviewUpload->isChecked());
+    settings->setValue("startMinimizedInTray",ui->startMinimizedInTray->isChecked());
+    settings->setValue("startScanningStartup",ui->startScanningStartup->isChecked());
+
     settings->sync();
     emit settingsSaved();
 }

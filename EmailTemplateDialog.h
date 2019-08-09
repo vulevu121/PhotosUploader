@@ -2,6 +2,7 @@
 #define EMAILTEMPLATEDIALOG_H
 
 #include <QDialog>
+#include <QString>
 
 namespace Ui {
 class EmailTemplateDialog;
@@ -17,6 +18,14 @@ public:
 
 private:
     Ui::EmailTemplateDialog *ui;
+
+private slots:
+    void emitSendEmailSignal();
+
+
+signals:
+    void sendEmailSignal(QString const &to, QString const &subject, QString const &body);
+
 };
 
 #endif // EMAILTEMPLATEDIALOG_H

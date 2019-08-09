@@ -54,6 +54,8 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->actionResume,SIGNAL(triggered()),this,SLOT(folderTimerStart()));
     connect(ui->actionStop,SIGNAL(triggered()),this,SLOT(folderTimerStop()));
 
+
+
     /* Use for testing oauth2 only*/
 //    gphoto = new GooglePhoto(this);
 //    QTimer::singleShot(30000,gphoto,SLOT(Reauthenticate()));
@@ -65,7 +67,14 @@ MainWindow::MainWindow(QWidget *parent) :
 }
 
 void MainWindow::syncSettings() {
-    qDebug() << settings->value("scanningInterval", "10").toString();
+    qDebug() << "scanning internal" <<settings->value("scanningInterval", "10").toString(); //done
+    qDebug() << "on error retries" <<  settings->value("onErrorRetries","10").toString();
+    qDebug() << "on error interval" << settings->value("onErrorAttemptInterval","10").toString();
+    qDebug() << "play chime" << settings->value("playChimeUploadFinish").toBool();
+    qDebug() << "save queue exit"<< settings->value("saveQueueExit").toBool();
+    qDebug() << "show preview upload"<< settings->value("showPreviewUpload").toBool();
+    qDebug() << "start minimize"<< settings->value("startMinimizedInTray").toBool();
+    qDebug() << "start scan start up"<< settings->value("startScanningStartup").toBool();
 
 }
 
@@ -193,7 +202,9 @@ void MainWindow::showCreateAlbumDialog() {
 
 void MainWindow::queueTimerStart(){
     qDebug() << "queue timer start";
-    queueTimer->start(2000);
+//    queueTimer->start(2000);
+    queueTimer->start(settings->value("scanningInterval", "10").toInt());
+
 }
 
 void MainWindow::queueTimerStop(){
@@ -207,8 +218,8 @@ void MainWindow::queueTimerInit(){
 
 void MainWindow::folderTimerStart(){
     qDebug() << "folder timer start";
-
-    folderTimer->start(8000);
+//    folderTimer->start(8000);
+    folderTimer->start(settings->value("scanningInterval", "10").toInt());
 }
 
 void MainWindow::folderTimerStop(){
@@ -323,20 +334,20 @@ void MainWindow::saveLog(){
         }
 }
 
-void MainWindow::emailLink(QString const &to, QString const &subject, QString const &body){
+void MainWindow::sendNow(QString const &to, QString const &subject, QString const &body){
      email = new GMAIL();
      email->SetToEmail(to);
      email->SetFromEmail("khuongnguyensac@gmail.com");
      email->SetSubject(subject);
      email->SetBody(body);
      email->SetAlbumURL(gphoto->GetAlbumURL());
-     connect(email,SIGNAL(linkReady()),email,SLOT(SendEmail()));
-
+     connect(email,SIGNAL(authenticated()),email,SLOT(SendEmail()));
 }
 
 void MainWindow::showEmailTemplate() {
     EmailTemplateDialog *emailDialog = new EmailTemplateDialog(this);
     emailDialog->show();
+    connect(emailDialog,SIGNAL(sendEmailSignal(QString const,QString const , QString const)),this,SLOT(sendNow(QString const,QString const , QString const)));
 }
 
 void MainWindow::showSMSTemplate() {
