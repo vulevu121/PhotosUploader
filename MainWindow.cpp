@@ -49,33 +49,104 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->clearWatchlistButton, SIGNAL(clicked()), this, SLOT(clearWatchlist()));
 
     connect(ui->actionCreateAlbum, SIGNAL(triggered()), this, SLOT(showCreateAlbumDialog()));
-    connect(ui->actionResume,SIGNAL(triggered()),this,SLOT(queueTimerStart()));
-    connect(ui->actionStop,SIGNAL(triggered()),this,SLOT(queueTimerStop()));
-    connect(ui->actionResume,SIGNAL(triggered()),this,SLOT(folderTimerStart()));
-    connect(ui->actionStop,SIGNAL(triggered()),this,SLOT(folderTimerStop()));
+    connect(ui->actionResume,SIGNAL(triggered()),this,SLOT(resumeQueue()));
+    connect(ui->actionStop,SIGNAL(triggered()),this,SLOT(stopQueue()));
 
-
+    /* Initialize the scan timers */
+    queueTimerInit();
+    folderTimerInit();
 
     /* Use for testing oauth2 only*/
 //    gphoto = new GooglePhoto(this);
 //    QTimer::singleShot(30000,gphoto,SLOT(Reauthenticate()));
-
-
 
     connect(ui->actionEmail, SIGNAL(triggered()), this, SLOT(showEmailTemplate()));
     connect(ui->actionSMS, SIGNAL(triggered()), this, SLOT(showSMSTemplate()));
 }
 
 void MainWindow::syncSettings() {
-    qDebug() << "scanning internal" <<settings->value("scanningInterval", "10").toString(); //done
-    qDebug() << "on error retries" <<  settings->value("onErrorRetries","10").toString();
-    qDebug() << "on error interval" << settings->value("onErrorAttemptInterval","10").toString();
-    qDebug() << "play chime" << settings->value("playChimeUploadFinish").toBool();
-    qDebug() << "save queue exit"<< settings->value("saveQueueExit").toBool();
-    qDebug() << "show preview upload"<< settings->value("showPreviewUpload").toBool();
-    qDebug() << "start minimize"<< settings->value("startMinimizedInTray").toBool();
-    qDebug() << "start scan start up"<< settings->value("startScanningStartup").toBool();
+//    qDebug() << "scanning internal" <<settings->value("scanningInterval", "10").toInt(); //done
+//    qDebug() << "on error retries" <<  settings->value("onErrorRetries","10").toInt();
+//    qDebug() << "on error interval" << settings->value("onErrorAttemptInterval","10").toInt();
+//    qDebug() << "play chime" << settings->value("playChimeUploadFinish").toBool();
+//    qDebug() << "save queue exit"<< settings->value("saveQueueExit").toBool();
+//    qDebug() << "show preview upload"<< settings->value("showPreviewUpload").toBool();
+//    qDebug() << "start minimize"<< settings->value("startMinimizedInTray").toBool();
+//    qDebug() << "start scan start up"<< settings->value("startScanningStartup").toBool(); //done
 
+
+   /* If timer is not initilize yet, do nothing. The time will sync automatically by the Setting object
+    * Otherwise, restart the active timer to update the interval
+    * If setting is triggerd before timer is initilize, you will crash */
+    if(queueTimer != nullptr && folderTimer != nullptr){
+        if(settings->value("scanningInterval").toInt() != queueTimer->interval()){
+            qDebug() << "Scan interval changed.";
+            stopQueue();
+            resumeQueue();
+        }else{
+            qDebug() << "Scan interval NOT changed.";
+        }
+    }else{
+        qDebug() << "Unable to change scan interval. Timer is not initialized.";
+    }
+
+    /* Start scan on start up option */
+    if(settings->value("startScanningStartup").toBool()){resumeQueue();}
+
+    /* Save queue on exit */
+
+}
+
+void MainWindow::queueTimerStart(){
+    qDebug() << "queue timer start";
+//    queueTimer->start(2000);
+    queueTimer->start(settings->value("scanningInterval", "10").toInt() * 1000);
+
+}
+
+void MainWindow::queueTimerStop(){
+    qDebug() << "queue timer stop";
+    queueTimer->stop();
+}
+
+void MainWindow::queueTimerInit(){
+    queueTimer = new QTimer(this);
+    connect(queueTimer,SIGNAL(timeout()),this,SLOT(queueUpload()));
+}
+
+void MainWindow::folderTimerStart(){
+    qDebug() << "folder timer start";
+//    folderTimer->start(8000);
+    folderTimer->start(settings->value("scanningInterval", "10").toInt() * 1000); // convert to ms
+}
+
+void MainWindow::folderTimerStop(){
+    qDebug() << "folder timer stop";
+    folderTimer->stop();
+}
+
+void MainWindow::folderTimerInit(){
+    folderTimer = new QTimer(this);
+    connect(folderTimer,SIGNAL(timeout()),this,SLOT(folderScan()));
+}
+
+void MainWindow::resumeQueue(){
+    if(queueTimer != nullptr && folderTimer != nullptr){
+            queueTimerStart();
+            folderTimerStart();
+
+        }else{
+            qDebug() << "Unable to resume scan. Timer is not initialized";
+        }
+}
+
+void MainWindow::stopQueue(){
+    if(queueTimer != nullptr && folderTimer != nullptr){
+            queueTimerStop();
+            folderTimerStop();
+    }else{
+        qDebug() << "Unable to stop scan. Timer is not initialized";
+    }
 }
 
 void MainWindow::addQueue() {
@@ -177,19 +248,13 @@ void MainWindow::createAlbum(QString const &name, QString const &desc, QString c
         gphoto->SetAlbumDescription(desc);
         connect(gphoto,SIGNAL(authenticated()),gphoto,SLOT(CreateAlbum()));
         connect(gphoto,SIGNAL(albumCreated()),gphoto,SLOT(ShareAlbum()));
-        //        connect(gphoto,SIGNAL(showMessage(QString const &)), ui->statusBar, SLOT(showMessage(QString const &)));
     }
-    queueTimerInit();
-    queueTimerStart();
-
-    folderTimerInit();
-    folderTimerStart();
-
-    /* Test saving log */
-    QTimer::singleShot(60000,this,SLOT(saveLog()));
 
     /* Show message */
     connect(gphoto,SIGNAL(showMessage(QString const &)), ui->statusBar, SLOT(showMessage(QString const &)));
+
+    /* Test saving log */
+    QTimer::singleShot(120000,this,SLOT(saveLog()));
 
 }
 
@@ -200,58 +265,31 @@ void MainWindow::showCreateAlbumDialog() {
 }
 
 
-void MainWindow::queueTimerStart(){
-    qDebug() << "queue timer start";
-//    queueTimer->start(2000);
-    queueTimer->start(settings->value("scanningInterval", "10").toInt());
-
-}
-
-void MainWindow::queueTimerStop(){
-    queueTimer->stop();
-}
-
-void MainWindow::queueTimerInit(){
-    queueTimer = new QTimer(this);
-    connect(queueTimer,SIGNAL(timeout()),this,SLOT(queueUpload()));
-}
-
-void MainWindow::folderTimerStart(){
-    qDebug() << "folder timer start";
-//    folderTimer->start(8000);
-    folderTimer->start(settings->value("scanningInterval", "10").toInt());
-}
-
-void MainWindow::folderTimerStop(){
-    folderTimer->stop();
-}
-
-void MainWindow::folderTimerInit(){
-    folderTimer = new QTimer(this);
-    connect(folderTimer,SIGNAL(timeout()),this,SLOT(folderScan()));
-}
-
 
 void MainWindow::queueUpload(){
 //     qDebug() << "Checking upload queue...";
      /* Iterate through the rows in the model, if status is Queue, upload photo,
       * If status is Completed, pass*/
      for(int row = 0; row < queueModel->rowCount();row++){
-         if(queueModel->item(row,(queueHeader.indexOf("Status")))->text() == "Queue" && gphoto->isAlbumReady() && !gphoto->isUploading()){
-            QString file = queueModel->item(row,(queueHeader.indexOf("Path")))->text();
-            if(!uploadedList.contains(file)){
-            qDebug() << "Uploading" << file;
-            gphoto->UploadPhoto(file);
+         QString file = queueModel->item(row,(queueHeader.indexOf("Path")))->text();
+         if(queueModel->item(row,(queueHeader.indexOf("Status")))->text() == "Queue"){
+                 if( gphoto->isAlbumReady() && !gphoto->isUploading()){
+                    if(!uploadedList.contains(file)){
+                        qDebug() << "Uploading" << file;
+                        gphoto->UploadPhoto(file);
 
-            /* Update queue model */
-            queueModel->item(row,(queueHeader.indexOf("Status")))->setText("Completed");
-            queueModel->item(row,(queueHeader.indexOf("Album")))->setText(gphoto->GetAlbumName());
-
-            connect(gphoto,SIGNAL(mediaCreated(QString)),this,SLOT(updateUploadedList(QString)));
-            }
-          }else{
-//             qDebug() << "staus is not Queue for upload";
-        }
+                        /* Update queue model */
+                        queueModel->item(row,(queueHeader.indexOf("Status")))->setText("Uploading");
+                        queueModel->item(row,(queueHeader.indexOf("Album")))->setText(gphoto->GetAlbumName());
+                        connect(gphoto,SIGNAL(mediaCreated(QString)),this,SLOT(updateUploadedList(QString)));
+                    }else{
+                        qDebug() << "File is already uploaded";
+                     }
+                   }
+         }else if(queueModel->item(row,(queueHeader.indexOf("Status")))->text() == "Uploading"){
+                  /* if the status is "Uploading", check if it is complete, if so then change status to completed */
+             if(uploadedList.contains(file)){queueModel->item(row,(queueHeader.indexOf("Status")))->setText("Completed");}
+         }
      }
 }
 
@@ -282,6 +320,7 @@ void MainWindow::folderScan(){
     for(int row = 0; row < queueModel->rowCount();row++){
         queue.append(queueModel->item(row,(queueHeader.indexOf("Path")))->text());
     }
+
     /* iterate the files in the folder */
     for(int row = 0; row < watchModel->rowCount();row++){
          if(watchModel->item(row,(watchHeader.indexOf("Status")))->text() == "Queue" ){
@@ -318,7 +357,7 @@ void MainWindow::folderScan(){
 
 void MainWindow::saveLog(){
     qDebug() << "Saving log";
-//    QString dir_path = camera_folder_path + "/";
+
     QFile jsonFile("C:/Users/khuon/Documents/Github/PhotosUploader/Upload Log.json");
     /* if log file does not exist, create a new one. Otherwise, overwrite */
     if (jsonFile.open(QIODevice::WriteOnly)) {
@@ -337,6 +376,7 @@ void MainWindow::saveLog(){
 void MainWindow::sendNow(QString const &to, QString const &subject, QString const &body){
      email = new GMAIL();
      email->SetToEmail(to);
+//     email->SetToEmail("7143529299@tmomail.net");
      email->SetFromEmail("khuongnguyensac@gmail.com");
      email->SetSubject(subject);
      email->SetBody(body);

@@ -57,6 +57,9 @@ private slots:
     void showEmailTemplate();
     void showSMSTemplate();
 
+    void resumeQueue();
+    void stopQueue();
+
 private:
     Ui::MainWindow *ui;
     SettingsDialog *settingsDialog = nullptr;

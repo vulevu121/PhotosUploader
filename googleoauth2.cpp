@@ -2,10 +2,10 @@
 
 GoogleOAuth2::GoogleOAuth2(QObject *parent) : QObject(parent)
 {   /* Initilize once when the class is created */
-//    view = new QWebEngineView();
-//    profile = new QWebEngineProfile();
-//    profile->setPersistentCookiesPolicy(QWebEngineProfile::AllowPersistentCookies);
-//    page = new QWebEnginePage(profile);
+    view = new QWebEngineView();
+    profile = new QWebEngineProfile();
+    profile->setPersistentCookiesPolicy(QWebEngineProfile::AllowPersistentCookies);
+    page = new QWebEnginePage(profile);
 
     connect(this, SIGNAL(authCodeReady()),this,SLOT(ExchangeAccessToken()));
 }
@@ -68,17 +68,17 @@ void GoogleOAuth2::AuthenticateReply(QNetworkReply *reply) {
         QUrl url(reply->url());
 
         /* This will not save cookie for this session */
-//        view->setPage(page);
-//        view->setUrl(url);
-//        view->show();
-//        view->disconnect();
-//        connect(view,SIGNAL(urlChanged(QUrl)),this,SLOT(AuthenticateRedirectReply(QUrl)));
+        view->setPage(page);
+        view->setUrl(url);
+        view->show();
+        view->disconnect();
+        connect(view,SIGNAL(urlChanged(QUrl)),this,SLOT(AuthenticateRedirectReply(QUrl)));
 
         /* This will store cookies for future session*/
-        view = new QWebEngineView();
-        view->load(url);
-        view->show();
-        connect(view,SIGNAL(urlChanged(QUrl)),this,SLOT(AuthenticateRedirectReply(QUrl)));
+//        view = new QWebEngineView();
+//        view->load(url);
+//        view->show();
+//        connect(view,SIGNAL(urlChanged(QUrl)),this,SLOT(AuthenticateRedirectReply(QUrl)));
     }
     manager->disconnect();
 
