@@ -32,7 +32,8 @@ void GoogleOAuth2::Authenticate(){
          manager = new QNetworkAccessManager(this);
      }
 
-    QFile jsonFile(jsonFilePath);
+//    QFile jsonFile(jsonFilePath);
+    QFile jsonFile(":/client_secret");
     jsonFile.open(QFile::ReadOnly);
     QJsonDocument document = QJsonDocument().fromJson(jsonFile.readAll());
 

@@ -29,7 +29,7 @@ private:
     QWebEnginePage * page;
 
     QJsonObject settingsObject;
-    QString jsonFilePath = QString("C:/Users/khuon/Documents/GitHub/PhotosUploader/client_secret_1044474243779-a1gndnc2as4cc5c6ufksmbetoafi5mcr.apps.googleusercontent.com.json");
+//    QString jsonFilePath = "qrc:/client_secret_1044474243779-a1gndnc2as4cc5c6ufksmbetoafi5mcr.apps.googleusercontent.com.json";
     QString scope = QString("?scope=https://www.googleapis.com/auth/photoslibrary.sharing");
     QString response_type;
     QString redirect_uri;

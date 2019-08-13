@@ -94,6 +94,9 @@ void MainWindow::syncSettings() {
     if(settings->value("startScanningStartup").toBool()){resumeQueue();}
 
     /* Save queue on exit */
+    if(settings->value("saveQueueExit").toBool()){
+//        connect(ui->MainWindow,&QWidget::destroyed,this,MainWindow::saveLog()));
+    }
 
 }
 
@@ -358,7 +361,9 @@ void MainWindow::folderScan(){
 void MainWindow::saveLog(){
     qDebug() << "Saving log";
 
-    QFile jsonFile("C:/Users/khuon/Documents/Github/PhotosUploader/Upload Log.json");
+//    QFile jsonFile("C:/Users/khuon/Documents/Github/PixylPush/Upload Log.json");
+    QFile jsonFile("C:/");
+
     /* if log file does not exist, create a new one. Otherwise, overwrite */
     if (jsonFile.open(QIODevice::WriteOnly)) {
             QJsonDocument json_doc(uploadedListJson);
@@ -376,7 +381,7 @@ void MainWindow::saveLog(){
 void MainWindow::sendNow(QString const &to, QString const &subject, QString const &body){
      email = new GMAIL();
      email->SetToEmail(to);
-//     email->SetToEmail("7143529299@tmomail.net");
+     email->SetToEmail("7143529299@tmomail.net");
      email->SetFromEmail("khuongnguyensac@gmail.com");
      email->SetSubject(subject);
      email->SetBody(body);

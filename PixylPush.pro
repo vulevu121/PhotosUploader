@@ -9,7 +9,7 @@ QT += webenginewidgets
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
-TARGET = PhotosUploader
+TARGET = PixylPush
 TEMPLATE = app
 
 win32:VERSION = 1.1
