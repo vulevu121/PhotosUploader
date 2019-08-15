@@ -403,7 +403,6 @@ void MainWindow::showSMSTemplate() {
     smsDialog->show();
 }
 
-
 MainWindow::~MainWindow()
 {
     delete ui;
