@@ -9,8 +9,9 @@ SettingsDialog::SettingsDialog(QWidget *parent) :
 
     connect(ui->buttonBox, SIGNAL(accepted()), this, SLOT(saveSettings()));
 
-//    ui->onErrorRetries->setValue(settings->value("onErrorRetries", "10").toInt());
-//    ui->scanningInterval->setValue(settings->value("scanningInterval", "10").toInt());
+    ui->startScanningStartup->setChecked(settings->value("startScanningStartup", false).toBool());
+    ui->onErrorRetries->setValue(settings->value("onErrorRetries", "10").toInt());
+    ui->scanningInterval->setValue(settings->value("scanningInterval", "10").toInt());
 }
 
 void SettingsDialog::saveSettings() {

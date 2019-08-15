@@ -2,34 +2,35 @@
 
 GMAIL::GMAIL(QObject *parent) : QObject(parent)
 {
-    auth.SetScope("GMAIL"); // default scope is google photo
-    auth.Authenticate();
-    connect(&auth,SIGNAL(tokenReady(QString)),this,SLOT(SetAccessToken(QString)));
+    auth = new GoogleOAuth2(this);
+    auth->SetScope("GMAIL"); // default scope is google photo
+    auth->Authenticate();
+    connect(auth,SIGNAL(tokenReady(QString)),this,SLOT(SetAccessToken(QString)));
 
 }
 
-void GMAIL::SetToEmail(QString email){
+void GMAIL::SetToEmail(QString const &email){
     receiverEmail = email;
 }
-void GMAIL::SetFromEmail(QString email){
+void GMAIL::SetFromEmail(QString const &email){
     senderEmail = email;
     }
-void GMAIL::SetAccessToken(QString token){
+void GMAIL::SetAccessToken(QString const &token){
     qDebug() << "Gmail Access Token is set";
     accessToken = token;
     emit authenticated();
 }
 
-void GMAIL::SetAlbumURL(QString url){
+void GMAIL::SetAlbumURL(QString const &url){
     albumURL = url;
     emit linkReady();
 }
 
-void GMAIL::SetBody(QString body){
+void GMAIL::SetBody(QString const &body){
     emailBody = body;
 }
 
-void GMAIL::SetSubject(QString subject){
+void GMAIL::SetSubject(QString const &subject){
     emailSubject = subject;
 }
 
@@ -107,10 +108,13 @@ void GMAIL::SendEmailReply(QNetworkReply * reply){
         QJsonDocument jsonDoc = QJsonDocument::fromJson(reply->readAll());
         QJsonObject jsonObj = jsonDoc.object();
 
-//        qDebug() << jsonObj;
 
         manager->disconnect();
 
      }
+
+}
+
+GMAIL::~GMAIL(){
 
 }

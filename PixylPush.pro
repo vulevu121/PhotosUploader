@@ -38,7 +38,6 @@ SOURCES += \
         gmail.cpp \
         googleoauth2.cpp \
         googlephoto.cpp \
-        googlephotoqueu.cpp \
         main.cpp \
         MainWindow.cpp
 
@@ -50,8 +49,7 @@ HEADERS += \
         SettingsDialog.h \
         gmail.h \
         googleoauth2.h \
-        googlephoto.h \
-        googlephotoqueu.h
+        googlephoto.h
 
 FORMS += \
         CreateAlbumDialog.ui \
@@ -70,3 +68,4 @@ RESOURCES += \
 
 DISTFILES += \
     Upload Log.json
+

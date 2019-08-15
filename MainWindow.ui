@@ -234,7 +234,7 @@
      <x>0</x>
      <y>0</y>
      <width>750</width>
-     <height>37</height>
+     <height>21</height>
     </rect>
    </property>
   </widget>
@@ -369,5 +369,26 @@
  <resources>
   <include location="graphics.qrc"/>
  </resources>
- <connections/>
+ <connections>
+  <connection>
+   <sender>MainWindow</sender>
+   <signal>destroyed()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>saveLog()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>374</x>
+     <y>201</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>374</x>
+     <y>201</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+ <slots>
+  <signal>signal1()</signal>
+  <slot>saveLog()</slot>
+ </slots>
 </ui>

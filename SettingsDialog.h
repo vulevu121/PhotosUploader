@@ -18,7 +18,7 @@ public:
 
     Ui::SettingsDialog *ui;
 private:
-    QSettings *settings = new QSettings("Pixyl", "PixylLibrary");
+    QSettings *settings = new QSettings("Pixyl", "PixylPush");
 public slots:
     void saveSettings();
 signals:

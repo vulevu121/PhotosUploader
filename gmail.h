@@ -17,10 +17,10 @@ class GMAIL : public QObject
     Q_OBJECT
 public:
     explicit GMAIL(QObject *parent = nullptr);
-
+    ~GMAIL();
 private:
     QNetworkAccessManager *manager = nullptr;
-    GoogleOAuth2 auth;
+    GoogleOAuth2 * auth  = nullptr;
     QString albumURL = QString("No URL available");
     QString accessToken;
     QString receiverEmail = QString("khuong.dinh.ng@gmail.com");
@@ -33,17 +33,17 @@ signals:
     void linkReady();
 
 public slots:
-    void SetAlbumURL(QString url);
+    void SetAlbumURL(QString const &url);
     void SendEmail();
-    void SetToEmail(QString email);
-    void SetFromEmail(QString email);
-    void SetSubject(QString);
-    void SetBody(QString);
+    void SetToEmail(QString const &email);
+    void SetFromEmail(QString const &email);
+    void SetSubject(QString const &sub);
+    void SetBody(QString const &body);
 
 
 private slots:
     void SendEmailReply(QNetworkReply * reply);
-    void SetAccessToken(QString token);
+    void SetAccessToken(QString const &token);
 
 
 };

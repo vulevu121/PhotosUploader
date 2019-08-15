@@ -9,7 +9,7 @@ int main(int argc, char *argv[])
 
     a.setOrganizationName("Pixyl");
     a.setOrganizationDomain("gopixyl.com");
-    a.setApplicationName("PixylLibrary");
+    a.setApplicationName("PixylPush");
 
 
 

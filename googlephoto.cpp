@@ -2,15 +2,15 @@
 
 GooglePhoto::GooglePhoto(QObject *parent) : QObject(parent)
 {
-
-    auth.SetScope();        // default scope is google photo
-    auth.Authenticate();
-    connect(&auth,SIGNAL(tokenReady(QString)),this,SLOT(SetAccessToken(QString)));
+    auth = new GoogleOAuth2(this);
+    auth->SetScope();        // default scope is google photo
+    auth->Authenticate();
+    connect(auth,SIGNAL(tokenReady(QString const)),this,SLOT(SetAccessToken(QString const)));
 
 }
 
 
-void GooglePhoto::SetTargetAlbumToUpload(QString id){
+void GooglePhoto::SetTargetAlbumToUpload(QString const &id){
     albumID = id;
     connect(this,SIGNAL(authenticated()),this,SLOT(GetAlbumById()));
 //    emit albumIdChanged(albumID);
@@ -23,6 +23,7 @@ void GooglePhoto::GetAlbumById(){
     if (manager == nullptr) {
         manager = new QNetworkAccessManager(this);
     }
+
     QUrl endpoint(QString("https://photoslibrary.googleapis.com/v1/albums/%1").arg(albumID));
     QNetworkRequest req(endpoint);
     req.setRawHeader("Authorization","Bearer "+ accessToken.toUtf8());
@@ -54,22 +55,22 @@ void GooglePhoto::GetAlbumByIdReply(QNetworkReply * reply){
 }
 
 
-void GooglePhoto::SetAccessToken(QString token){
+void GooglePhoto::SetAccessToken(QString const &token){
     qDebug() << "Google Photo Access Token is set";
     accessToken = token;
     emit authenticated();
 }
 
-void GooglePhoto::SetAlbumName(QString name){
+void GooglePhoto::SetAlbumName(QString const &name){
     albumName = name;
 
 }
 
-void GooglePhoto::SetAlbumDescription(QString note){
+void GooglePhoto::SetAlbumDescription(QString const &note){
     albumDescription = note;
 }
 
-void GooglePhoto::SetPathToFile(QString path){
+void GooglePhoto::SetPathToFile(QString const &path){
     qDebug() << path << "changed";
     emit pathToFileChanged(path);
 }
@@ -81,8 +82,9 @@ bool GooglePhoto::isUploading(){
 
 bool GooglePhoto::isAlbumReady(){
     return albumReady;
+
 }
-void GooglePhoto::UploadPhoto(QString pathToPic){
+void GooglePhoto::UploadPhoto(QString const &pathToPic){
 
     qDebug() << "Uploading to existing album...";
 
@@ -104,12 +106,12 @@ void GooglePhoto::UploadPhoto(QString pathToPic){
     /* Start uploading */
     UploadPicData(pathToPic);
     /* Create the file on Google Photo */
-    connect(this,SIGNAL(uploadTokenReceived(QString)),this,SLOT(CreateMediaInAlbum(QString)));
+    connect(this,SIGNAL(uploadTokenReceived(QString const)),this,SLOT(CreateMediaInAlbum(QString const)));
 }
 
 
 
-void GooglePhoto::UploadPicData(QString path){
+void GooglePhoto::UploadPicData(QString const &path){
         qDebug() << "Uploading binary";
 
         if (manager == nullptr) {
@@ -220,7 +222,7 @@ void GooglePhoto::CreateMultipleMediaInAlbum(){
             this, SLOT(CreateMediaReply(QNetworkReply*)));
 }
 
-void GooglePhoto::CreateMediaInAlbum(QString token){
+void GooglePhoto::CreateMediaInAlbum(QString const &token){
     qDebug() << "Creating media in Album";
     if (manager == nullptr) {
         manager = new QNetworkAccessManager(this);
@@ -415,8 +417,8 @@ void GooglePhoto::GetAlbumsReply(QNetworkReply * reply){
 }
 
 void GooglePhoto::Reauthenticate(){
-    auth.Authenticate();   //Share scope cannot querry for list of albums from Google Photo
-    connect(&auth,SIGNAL(tokenReady(QString)),this,SLOT(SetAccessToken(QString)));
+    auth->Authenticate();   //Share scope cannot querry for list of albums from Google Photo
+    connect(auth,SIGNAL(tokenReady(QString const)),this,SLOT(SetAccessToken(QString const)));
 
 }
 
@@ -434,4 +436,8 @@ QString GooglePhoto::GetAlbumURL(){
 
 QString GooglePhoto::GetUploadedPhotoURL(){
     return uploadedPhotoURL;
+}
+
+GooglePhoto::~GooglePhoto(){
+
 }

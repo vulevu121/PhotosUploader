@@ -21,6 +21,7 @@ class GoogleOAuth2 : public QObject
     Q_OBJECT
 public:
     explicit GoogleOAuth2(QObject *parent = nullptr);
+    ~GoogleOAuth2();
 
 private:
     QNetworkAccessManager *manager = nullptr;
@@ -54,11 +55,11 @@ private slots:
     void RefreshAccessTokenReply(QNetworkReply *reply);
 public slots:
     void Authenticate();
-    void SetScope(QString RequestScope = "PHOTO");
-    void SetRawScope(QString RawScope);  // use to set a scope different from the default options
+    void SetScope(QString const  &RequestScope = "PHOTO");
+    void SetRawScope(QString const  &RawScope);  // use to set a scope different from the default options
 
 signals:
-    void tokenReady(QString token);
+    void tokenReady(QString const &token);
     void scopeSet();
     void authCodeReady();
 };

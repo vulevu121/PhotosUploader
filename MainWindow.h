@@ -9,10 +9,11 @@
 #include <QDir>
 #include <QSettings>
 #include "SettingsDialog.h"
-#include "googlephotoqueu.h"
 #include "CreateAlbumDialog.h"
 #include "EmailTemplateDialog.h"
 #include "SMSTemplateDialog.h"
+#include "googlephoto.h"
+#include "gmail.h"
 
 namespace Ui {
 class MainWindow;
@@ -51,7 +52,7 @@ private slots:
 
     void updateUploadedList(QString);
     void sendNow(QString const &to, QString const &subject, QString const &body);
-    void saveLog();
+
 
     void syncSettings();
     void showEmailTemplate();
@@ -59,6 +60,9 @@ private slots:
 
     void resumeQueue();
     void stopQueue();
+
+public slots:
+    void saveLog();
 
 private:
     Ui::MainWindow *ui;
@@ -80,7 +84,7 @@ private:
 
 
 
-    QSettings *settings = new QSettings("Pixyl", "PixylLibrary");
+    QSettings *settings = new QSettings("Pixyl", "PixylPush");
 };
 
 #endif // MAINWINDOW_H

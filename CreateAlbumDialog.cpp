@@ -16,13 +16,7 @@ CreateAlbumDialog::CreateAlbumDialog(QWidget *parent) :
 }
 
 void CreateAlbumDialog::emitCreateAlbumSignal() {
-////    qDebug() << "emit create album signal";
-//    if(ui->existingAlbumGroupbox->isChecked()){
-////       emit existingAlbumSignal(ui)
 
-//    }else{
-
-//    }
     emit createAlbumSignal(
                 ui->albumNameEdit->text(),
                 ui->albumDescEdit->text(),

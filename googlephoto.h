@@ -17,10 +17,10 @@ class GooglePhoto : public QObject
     Q_OBJECT
 public:
     explicit GooglePhoto(QObject *parent = nullptr);
-
+    ~GooglePhoto();
 private:
     QNetworkAccessManager *manager = nullptr;
-    GoogleOAuth2 auth;
+    GoogleOAuth2 * auth = nullptr ;
     QString accessToken;
     QString uploadToken;
     QString uploadedPhotoURL;
@@ -37,23 +37,23 @@ private:
 
 signals:
     void authenticated();
-    void uploadTokenReceived(QString);
+    void uploadTokenReceived(QString const &token);
     void albumCreated();
-    void albumShared(QString);
-    void albumIdChanged(QString);
-    void mediaCreated(QString);
-    void pathToFileChanged(QString);
+    void albumShared(QString const &url);
+    void albumIdChanged(QString const &id);
+    void mediaCreated(QString const &filename);
+    void pathToFileChanged(QString const &newPath);
     void showMessage(QString const &msg);
 
 private slots:
-    void SetAccessToken(QString token);
-    void UploadPicData(QString);
+    void SetAccessToken(QString const &token);
+    void UploadPicData(QString const &path);
     void UploadReply(QNetworkReply *reply);
     void CreateAlbum();
     void CreateAlbumReply(QNetworkReply * reply);
     void ShareAlbum();
     void ShareAlbumReply(QNetworkReply * reply);
-    void CreateMediaInAlbum(QString);
+    void CreateMediaInAlbum(QString const &token);
     void CreateMediaReply(QNetworkReply *reply);
     void GetAlbums();
     void GetAlbumsReply(QNetworkReply * reply);
@@ -64,14 +64,14 @@ private slots:
 
 public slots:
     /* If album already exists, this function will set the target album for all uploads */
-    void SetAlbumDescription(QString note);
-    void SetPathToFile(QString path);
-    void UploadPhoto(QString pathToPic);
-    void SetAlbumName(QString name);
+    void SetAlbumDescription(QString const &note);
+    void SetPathToFile(QString const &path);
+    void UploadPhoto(QString const &pathToPic);
+    void SetAlbumName(QString const &name);
     bool isUploading();
     bool isAlbumReady();
     void CreateMultipleMediaInAlbum();
-    void SetTargetAlbumToUpload(QString id);
+    void SetTargetAlbumToUpload(QString const &id);
     /* Use for testing oauth2 only */
     void Reauthenticate();
 

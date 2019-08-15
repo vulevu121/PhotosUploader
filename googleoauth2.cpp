@@ -2,14 +2,14 @@
 
 GoogleOAuth2::GoogleOAuth2(QObject *parent) : QObject(parent)
 {   /* Initilize once when the class is created */
-    view = new QWebEngineView();
-    profile = new QWebEngineProfile();
-    profile->setPersistentCookiesPolicy(QWebEngineProfile::AllowPersistentCookies);
-    page = new QWebEnginePage(profile);
+//    view = new QWebEngineView();
+//    profile = new QWebEngineProfile();
+//    profile->setPersistentCookiesPolicy(QWebEngineProfile::AllowPersistentCookies);
+//    page = new QWebEnginePage(profile);
 
     connect(this, SIGNAL(authCodeReady()),this,SLOT(ExchangeAccessToken()));
 }
-void GoogleOAuth2::SetScope(QString RequestScope){
+void GoogleOAuth2::SetScope(QString const  &RequestScope){
 
     if(RequestScope == "GMAIL"){
         qDebug() << "Scope for Gmail";
@@ -21,7 +21,7 @@ void GoogleOAuth2::SetScope(QString RequestScope){
     emit scopeSet();
 }
 
-void GoogleOAuth2::SetRawScope(QString RawScope){
+void GoogleOAuth2::SetRawScope(QString const &RawScope){
     scope = QString("?scope="+RawScope);
 
 }
@@ -69,17 +69,17 @@ void GoogleOAuth2::AuthenticateReply(QNetworkReply *reply) {
         QUrl url(reply->url());
 
         /* This will not save cookie for this session */
-        view->setPage(page);
-        view->setUrl(url);
-        view->show();
-        view->disconnect();
-        connect(view,SIGNAL(urlChanged(QUrl)),this,SLOT(AuthenticateRedirectReply(QUrl)));
+//        view->setPage(page);
+//        view->setUrl(url);
+//        view->show();
+//        view->disconnect();
+//        connect(view,SIGNAL(urlChanged(QUrl)),this,SLOT(AuthenticateRedirectReply(QUrl)));
 
         /* This will store cookies for future session*/
-//        view = new QWebEngineView();
-//        view->load(url);
-//        view->show();
-//        connect(view,SIGNAL(urlChanged(QUrl)),this,SLOT(AuthenticateRedirectReply(QUrl)));
+        view = new QWebEngineView();
+        view->load(url);
+        view->show();
+        connect(view,SIGNAL(urlChanged(QUrl)),this,SLOT(AuthenticateRedirectReply(QUrl)));
     }
     manager->disconnect();
 
@@ -159,6 +159,7 @@ void GoogleOAuth2::ExchangeTokenReply(QNetworkReply *reply) {
     }
     /* Close Web view after log in */
     view->close();
+
 }
 /* Note that there are limits on the number of refresh tokens that will be issued;
  * one limit per client/user combination, and another per user across all clients*/
@@ -210,5 +211,10 @@ void GoogleOAuth2::RefreshAccessTokenReply(QNetworkReply* reply){
         emit tokenReady(accessToken);
 
     }
+}
+
+GoogleOAuth2::~GoogleOAuth2(){
+    delete view;
+    delete page;
 }
 

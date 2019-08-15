@@ -8,10 +8,12 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
 
-    QSettings settings("Pixyl", "PixylBooth");
+    QSettings settings("Pixyl", "PixylPush");
 
     settingsDialog = new SettingsDialog(this);
+
     connect(settingsDialog, SIGNAL(settingsSaved()), this, SLOT(syncSettings()));
+//    connect(this, SIGNAL(destroyed(QObject *)), this, SLOT(saveLog(QObject *)));
 
     queueHeader = QStringList({
         "Filename",
@@ -62,6 +64,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
     connect(ui->actionEmail, SIGNAL(triggered()), this, SLOT(showEmailTemplate()));
     connect(ui->actionSMS, SIGNAL(triggered()), this, SLOT(showSMSTemplate()));
+
 }
 
 void MainWindow::syncSettings() {
@@ -254,7 +257,7 @@ void MainWindow::createAlbum(QString const &name, QString const &desc, QString c
     }
 
     /* Show message */
-    connect(gphoto,SIGNAL(showMessage(QString const &)), ui->statusBar, SLOT(showMessage(QString const &)));
+    connect(gphoto,SIGNAL(showMessage(QString const)), ui->statusBar, SLOT(showMessage(QString const)));
 
     /* Test saving log */
     QTimer::singleShot(120000,this,SLOT(saveLog()));
@@ -350,8 +353,6 @@ void MainWindow::folderScan(){
                 }
             }
             watchModel->item(row,(watchHeader.indexOf("No. Files")))->setText(QString::number(images.length()));
-
-//            watchModel->item(row,(watchHeader.indexOf("Status")))->setText("Scanned");
             connect(gphoto,SIGNAL(mediaCreated(QString)),this,SLOT(updateUploadedList(QString)));
             }
      }
@@ -361,21 +362,21 @@ void MainWindow::folderScan(){
 void MainWindow::saveLog(){
     qDebug() << "Saving log";
 
-//    QFile jsonFile("C:/Users/khuon/Documents/Github/PixylPush/Upload Log.json");
-    QFile jsonFile("C:/");
+////    QFile jsonFile("C:/Users/khuon/Documents/Github/PixylPush/Upload Log.json");
+//    QFile jsonFile("C:/");
 
-    /* if log file does not exist, create a new one. Otherwise, overwrite */
-    if (jsonFile.open(QIODevice::WriteOnly)) {
-            QJsonDocument json_doc(uploadedListJson);
-            QString json_string = json_doc.toJson();
+//    /* if log file does not exist, create a new one. Otherwise, overwrite */
+//    if (jsonFile.open(QIODevice::WriteOnly)) {
+//            QJsonDocument json_doc(uploadedListJson);
+//            QString json_string = json_doc.toJson();
 
-            jsonFile.write(json_string.toLocal8Bit());
-            jsonFile.close();
-        }
-        else{
-            qDebug() << "failed to open save file" << endl;
-            return;
-        }
+//            jsonFile.write(json_string.toLocal8Bit());
+//            jsonFile.close();
+//        }
+//        else{
+//            qDebug() << "failed to open save file" << endl;
+//            return;
+//        }
 }
 
 void MainWindow::sendNow(QString const &to, QString const &subject, QString const &body){
@@ -385,7 +386,9 @@ void MainWindow::sendNow(QString const &to, QString const &subject, QString cons
      email->SetFromEmail("khuongnguyensac@gmail.com");
      email->SetSubject(subject);
      email->SetBody(body);
-     email->SetAlbumURL(gphoto->GetAlbumURL());
+//     email->SetAlbumURL(gphoto->GetAlbumURL());
+     email->SetAlbumURL("Testing");
+
      connect(email,SIGNAL(authenticated()),email,SLOT(SendEmail()));
 }
 
