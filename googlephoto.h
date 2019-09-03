@@ -37,11 +37,13 @@ private:
 
 signals:
     void authenticated();
+    void notAuthenticated(QString const &msg);
     void uploadTokenReceived(QString const &token);
     void albumCreated();
     void albumShared(QString const &url);
     void albumIdChanged(QString const &id);
     void mediaCreated(QString const &filename);
+    void mediaCreateFailed(QString const &filename);
     void pathToFileChanged(QString const &newPath);
     void showMessage(QString const &msg);
 
@@ -49,7 +51,6 @@ private slots:
     void SetAccessToken(QString const &token);
     void UploadPicData(QString const &path);
     void UploadReply(QNetworkReply *reply);
-    void CreateAlbum();
     void CreateAlbumReply(QNetworkReply * reply);
     void ShareAlbum();
     void ShareAlbumReply(QNetworkReply * reply);
@@ -57,10 +58,10 @@ private slots:
     void CreateMediaReply(QNetworkReply *reply);
     void GetAlbums();
     void GetAlbumsReply(QNetworkReply * reply);
-    void AppendUploadTokenList(QString);
+//    void AppendUploadTokenList(QString);
     void GetAlbumById();
     void GetAlbumByIdReply(QNetworkReply * reply);
-
+    void NotAuthenticated(QString const &message);
 
 public slots:
     /* If album already exists, this function will set the target album for all uploads */
@@ -70,10 +71,11 @@ public slots:
     void SetAlbumName(QString const &name);
     bool isUploading();
     bool isAlbumReady();
-    void CreateMultipleMediaInAlbum();
     void SetTargetAlbumToUpload(QString const &id);
-    /* Use for testing oauth2 only */
+    void CreateAlbum();
     void Reauthenticate();
+
+    bool isAuthenticated();
 
     QString GetAlbumName();
     QString GetAlbumURL();

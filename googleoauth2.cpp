@@ -2,28 +2,27 @@
 
 GoogleOAuth2::GoogleOAuth2(QObject *parent) : QObject(parent)
 {   /* Initilize once when the class is created */
-//    view = new QWebEngineView();
-//    profile = new QWebEngineProfile();
-//    profile->setPersistentCookiesPolicy(QWebEngineProfile::AllowPersistentCookies);
-//    page = new QWebEnginePage(profile);
+    profile = new QWebEngineProfile(QString("cookieData"),this);
+    profile->setPersistentCookiesPolicy(QWebEngineProfile::ForcePersistentCookies);
+    profile->setPersistentStoragePath("C:/Users/khuon/Documents/Github/PixylPush/Cookies");
+    page = new QWebEnginePage(profile,this);
+    view = new QWebEngineView();
 
     connect(this, SIGNAL(authCodeReady()),this,SLOT(ExchangeAccessToken()));
 }
 void GoogleOAuth2::SetScope(QString const  &RequestScope){
-
     if(RequestScope == "GMAIL"){
         qDebug() << "Scope for Gmail";
-        scope = QString("?scope=https://www.googleapis.com/auth/gmail.send "); // Create, read, update, and delete drafts. Send messages and drafts.
+        scope = QString("?scope=https://www.googleapis.com/auth/gmail.send");
     }else{
         qDebug() << "Scope for Google Photo";
-        scope = QString("?scope=https://www.googleapis.com/auth/photoslibrary.sharing https://www.googleapis.com/auth/photoslibrary"); // scope for sharing
+        scope = QString("?scope=https://www.googleapis.com/auth/photoslibrary.sharing https://www.googleapis.com/auth/photoslibrary https://www.googleapis.com/auth/gmail.send"); // scope for sharing
     }
     emit scopeSet();
 }
 
 void GoogleOAuth2::SetRawScope(QString const &RawScope){
     scope = QString("?scope="+RawScope);
-
 }
 
 
@@ -31,94 +30,76 @@ void GoogleOAuth2::Authenticate(){
     if (manager == nullptr) {
          manager = new QNetworkAccessManager(this);
      }
-
-//    QFile jsonFile(jsonFilePath);
     QFile jsonFile(":/client_secret");
     jsonFile.open(QFile::ReadOnly);
     QJsonDocument document = QJsonDocument().fromJson(jsonFile.readAll());
-
     const auto object = document.object();
     settingsObject = object["web"].toObject();
     authEndpoint = settingsObject["auth_uri"].toString();
     tokenEndpoint = settingsObject["token_uri"].toString() + "?";
-
     response_type = QString("&response_type=code");
-
     redirect_uri = QString("&redirect_uri=" + settingsObject["redirect_uris"].toArray()[0].toString());
-
     client_id = "&client_id=" + settingsObject["client_id"].toString();
-
     client_secret = "&client_secret=" + settingsObject["client_secret"].toString();
-
     QUrl url(authEndpoint + scope + response_type + redirect_uri + client_id);
-
-//        qDebug() << url;
-        QNetworkRequest req(url);
-
-        manager->get(req);
-
-        connect(this->manager, SIGNAL(finished(QNetworkReply*)),
+    QNetworkRequest req(url);
+    manager->get(req);
+    connect(this->manager, SIGNAL(finished(QNetworkReply*)),
                 this, SLOT(AuthenticateReply(QNetworkReply*)));
 }
 
 void GoogleOAuth2::AuthenticateReply(QNetworkReply *reply) {
     if(reply->error()) {
-        qDebug() << reply->errorString();
+        QString err =  reply->errorString();
+        manager->disconnect();
+        qDebug() << err;
+        if (err == "Host accounts.google.com not found"){
+            emit showMessage(err + QString(". Check WiFi connection."));
+        }else{emit showMessage(err);}
     } else {
         qDebug() << "Access Code request success!";
         QUrl url(reply->url());
 
         /* This will not save cookie for this session */
-//        view->setPage(page);
-//        view->setUrl(url);
-//        view->show();
-//        view->disconnect();
-//        connect(view,SIGNAL(urlChanged(QUrl)),this,SLOT(AuthenticateRedirectReply(QUrl)));
-
-        /* This will store cookies for future session*/
-        view = new QWebEngineView();
-        view->load(url);
+        view->setPage(page);
+        view->setUrl(url);
         view->show();
+        view->disconnect();
         connect(view,SIGNAL(urlChanged(QUrl)),this,SLOT(AuthenticateRedirectReply(QUrl)));
-    }
-    manager->disconnect();
+        manager->disconnect();
 
+        qDebug() << view->page()->profile()->persistentStoragePath();
+        qDebug() << view->page()->profile()->persistentCookiesPolicy();
+    }
+}
+
+void GoogleOAuth2::deleteCookies(){
+    qDebug() << "Deleting all cookies";
+    view->page()->profile()->cookieStore()->deleteAllCookies();
 }
 
 void GoogleOAuth2::AuthenticateRedirectReply(QUrl url) {
     qDebug() << "Access Code Request Replied!";
     QString url_string(url.toString());
-//    qDebug() << url_string;
-
-
     url_string.replace("?","&");
     QStringList list  = url_string.split(QString("&"));
-
 //    qDebug() << list;
-
     if (list[0] == settingsObject["redirect_uris"].toArray()[0].toString()){
         authCode = list.at(1);
 //        qDebug() << authCode;
         emit authCodeReady();
-    }else{
-//        qDebug() << "if access token doesnt display. May need to enable googleoauth2 view";
     }
 }
 
 void GoogleOAuth2::ExchangeAccessToken(){
     qDebug() << "Exchanging Access Token...";
-
     /* Exchange the access code for access token */
     if (manager == nullptr) {
          manager = new QNetworkAccessManager(this);
      }
-
-
     QUrl urlToken(tokenEndpoint+ authCode+client_id+client_secret+redirect_uri+grant_type);
     QNetworkRequest req(urlToken);
     req.setRawHeader("Content-Type","application/x-www-form-urlencoded");
-
-//    qDebug() << urlToken;
     QByteArray data;
     manager->post(req,data);
 
@@ -131,8 +112,11 @@ void GoogleOAuth2::ExchangeTokenReply(QNetworkReply *reply) {
         QByteArray response = reply->readAll();
         QJsonDocument jsonDoc = QJsonDocument::fromJson(response);
         QJsonObject jsonObject = jsonDoc.object();
-//        qDebug() << jsonObject["error"].toObject()["message"].toString();
+        QString err = jsonObject["error"].toObject()["message"].toString();
+        qDebug() << err;
         manager->disconnect();
+        emit showMessage(err);
+
 
     } else {
         qDebug() << "Token Received!";
@@ -155,7 +139,8 @@ void GoogleOAuth2::ExchangeTokenReply(QNetworkReply *reply) {
         qDebug() << "New Access Token:" << accessToken;
         /* disconnext previous connect */
         manager->disconnect();
-        emit tokenReady(accessToken);
+        emit authenticated(accessToken);
+        emit showMessage("Log In successful.");
     }
     /* Close Web view after log in */
     view->close();
@@ -208,9 +193,12 @@ void GoogleOAuth2::RefreshAccessTokenReply(QNetworkReply* reply){
         manager->disconnect();
         /* Use the same signal so that the class uses googleoauth2 automatically
          * update their stored token */
-        emit tokenReady(accessToken);
-
+        emit authenticated(accessToken);
     }
+}
+
+bool GoogleOAuth2::isAuthenticated(){
+   return !accessToken.isEmpty();
 }
 
 GoogleOAuth2::~GoogleOAuth2(){

@@ -15,6 +15,9 @@
 #include <QTimer>
 #include <QWebEngineProfile>
 #include <QWebEnginePage>
+#include <QStandardPaths>
+#include <QWebEngineCookieStore>
+
 
 class GoogleOAuth2 : public QObject
 {
@@ -30,7 +33,6 @@ private:
     QWebEnginePage * page;
 
     QJsonObject settingsObject;
-//    QString jsonFilePath = "qrc:/client_secret_1044474243779-a1gndnc2as4cc5c6ufksmbetoafi5mcr.apps.googleusercontent.com.json";
     QString scope = QString("?scope=https://www.googleapis.com/auth/photoslibrary.sharing");
     QString response_type;
     QString redirect_uri;
@@ -53,15 +55,20 @@ private slots:
     void AuthenticateRedirectReply(QUrl url);
     void RefreshAccessToken();
     void RefreshAccessTokenReply(QNetworkReply *reply);
+
 public slots:
     void Authenticate();
     void SetScope(QString const  &RequestScope = "PHOTO");
     void SetRawScope(QString const  &RawScope);  // use to set a scope different from the default options
+    void deleteCookies();
+    bool isAuthenticated();
 
 signals:
-    void tokenReady(QString const &token);
+    void authenticated(QString const &token);
     void scopeSet();
     void authCodeReady();
+    void authenticateFailed(QString const &msg);
+    void showMessage(QString const &msg);
 };
 
 #endif // GOOGLEOAUTH2_H

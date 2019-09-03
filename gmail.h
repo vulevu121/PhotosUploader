@@ -11,6 +11,7 @@
 #include <QFile>
 #include <QUrl>
 #include "googleoauth2.h"
+#include <QHttpMultiPart>
 
 class GMAIL : public QObject
 {
@@ -39,6 +40,9 @@ public slots:
     void SetFromEmail(QString const &email);
     void SetSubject(QString const &sub);
     void SetBody(QString const &body);
+    bool isAuthenticated();
+    QString GetAlbumURL();
+    QString GetToEmail();
 
 
 private slots:

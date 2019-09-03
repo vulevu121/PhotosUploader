@@ -8,12 +8,15 @@
 #include <QDebug>
 #include <QDir>
 #include <QSettings>
+#include <QList>
+#include <QElapsedTimer>
 #include "SettingsDialog.h"
 #include "CreateAlbumDialog.h"
 #include "EmailTemplateDialog.h"
 #include "SMSTemplateDialog.h"
 #include "googlephoto.h"
 #include "gmail.h"
+#include "googleoauth2.h"
 
 namespace Ui {
 class MainWindow;
@@ -27,7 +30,6 @@ public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 signals:
-//    void createAlbumSignal(QString const &name, QString const &desc, QString const &albumId, bool newExistingAlbum);
     void existingAlbumSignal(QString const &id);
 
 private slots:
@@ -50,9 +52,11 @@ private slots:
     void folderTimerStart();
     void folderTimerStop();
 
-    void updateUploadedList(QString);
-    void sendNow(QString const &to, QString const &subject, QString const &body);
+    void saveTimerInit();
 
+    void updateUploadedList(QString const &filename);
+    void sendNow(QString const &to, QString const &subject, QString const &body);
+    void updateFailedList(QString const &filename);
 
     void syncSettings();
     void showEmailTemplate();
@@ -61,7 +65,19 @@ private slots:
     void resumeQueue();
     void stopQueue();
 
+    void resetFailItems();
+    void emailOut();
+    void emailInit();
+
+    void googleLogIn();
+    void googleLogOut();
+
+    void deleteAllObjects();
+
+    QString getAlbumIdFromFile();
+
 public slots:
+    void logInit();
     void saveLog();
 
 private:
@@ -75,13 +91,20 @@ private:
 
     CreateAlbumDialog * createAlbumDialog = nullptr;
     GooglePhoto * gphoto = nullptr;
+    GMAIL *email = nullptr;
+    GoogleOAuth2 * auth = nullptr;
+
     QTimer * queueTimer = nullptr;
     QTimer * folderTimer = nullptr;
+    QTimer *  saveTimer = nullptr ;
+    QTimer elapsedTime;
+
     QStringList uploadedList;
     QJsonArray uploadedListJson;
+    QMap<QString,int> uploadFailedList;
     bool isReady = true;
-    GMAIL *email = nullptr;
-
+    QJsonObject jsonObj;
+    QString logPath;
 
 
     QSettings *settings = new QSettings("Pixyl", "PixylPush");
