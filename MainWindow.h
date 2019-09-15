@@ -10,6 +10,7 @@
 #include <QSettings>
 #include <QList>
 #include <QElapsedTimer>
+#include <QStandardPaths>
 #include "SettingsDialog.h"
 #include "CreateAlbumDialog.h"
 #include "EmailTemplateDialog.h"

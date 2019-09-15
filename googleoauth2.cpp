@@ -73,12 +73,10 @@ void GoogleOAuth2::AuthenticateReply(QNetworkReply *reply) {
     }
 }
 
-void GoogleOAuth2::deleteCookies(){
-    qDebug() << "Deleting all cookies";
-    view->page()->profile()->cookieStore()->deleteAllCookies();
-}
 
 void GoogleOAuth2::AuthenticateRedirectReply(QUrl url) {
+    /* hide the window to prevent customer seeing an error page */
+//    view->hide();
     qDebug() << "Access Code Request Replied!";
     QString url_string(url.toString());
     url_string.replace("?","&");
@@ -195,6 +193,11 @@ void GoogleOAuth2::RefreshAccessTokenReply(QNetworkReply* reply){
          * update their stored token */
         emit authenticated(accessToken);
     }
+}
+
+void GoogleOAuth2::deleteCookies(){
+    qDebug() << "Deleting all cookies";
+    view->page()->profile()->cookieStore()->deleteAllCookies();
 }
 
 bool GoogleOAuth2::isAuthenticated(){

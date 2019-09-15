@@ -61,7 +61,7 @@ MainWindow::MainWindow(QWidget *parent) :
     /* Initialize the scan timers */
     queueTimerInit();
     folderTimerInit();
-//    saveTimerInit();
+    saveTimerInit();
 //    logInit();
 //    emailInit();
     /* Start scan on start up option */
@@ -71,7 +71,6 @@ MainWindow::MainWindow(QWidget *parent) :
 
     connect(ui->actionEmail, SIGNAL(triggered()), this, SLOT(showEmailTemplate()));
     connect(ui->actionSMS, SIGNAL(triggered()), this, SLOT(showSMSTemplate()));
-
 }
 
 void MainWindow::syncSettings() {
@@ -284,6 +283,9 @@ void MainWindow::googleLogOut(){
 
 void MainWindow::deleteAllObjects(){
 //    qDebug() << "Before delete:" << uploadedList  << uploadedListJson << uploadFailedList;
+    gphoto = nullptr;
+    email = nullptr;
+    auth = nullptr;
     uploadedList = QStringList();
     uploadedListJson = QJsonArray();
     uploadFailedList = QMap<QString,int>();
@@ -311,22 +313,25 @@ void MainWindow::createAlbum(QString const &name, QString const &desc, QString c
         connect(gphoto,SIGNAL(showMessage(QString const)), ui->statusBar, SLOT(showMessage(QString const)));
     }
     else{
-        QString msg = "Google Photo is not authenticated. Please log in.";
+        QString msg = "Google Photo is not authenticated. Please log in";
         ui->statusBar->showMessage(msg);
     }
 }
 
 void MainWindow::showCreateAlbumDialog() {
-    CreateAlbumDialog *dialog = new CreateAlbumDialog(this);
-    /* Grab Id from log file */
-//    dialog->setExistingAlbumId(getAlbumIdFromFile());
-    /* Grab Id from registry */
-    dialog->setExistingAlbumId(settings->value("lastUsedAlbumId","").toString());
-    dialog->show();
-    connect(dialog, SIGNAL(createAlbumSignal(QString const, QString const , QString const , bool )), this, SLOT(createAlbum(QString const, QString const , QString const , bool )));
+    if(gphoto != nullptr){
+        CreateAlbumDialog *dialog = new CreateAlbumDialog(this);
+        /* Grab Id from log file */
+//      dialog->setExistingAlbumId(getAlbumIdFromFile());
+        /* Grab Id from registry */
+        dialog->setExistingAlbumId(settings->value("lastUsedAlbumId","").toString());
+        dialog->show();
+        connect(dialog, SIGNAL(createAlbumSignal(QString const, QString const , QString const , bool )), this, SLOT(createAlbum(QString const, QString const , QString const , bool )));
+    }else{
+        ui->statusBar->showMessage("Please log in before trying to create album");
+    }
+
 }
-
-
 void MainWindow::queueUpload(){
      qDebug() << "Checking upload queue...";
      /* Iterate through the rows in the model, if status is Queue, upload photo,
@@ -598,21 +603,27 @@ void MainWindow::saveLog(){
         settings->sync();
     }
     /* if log file does not exist, create a new one. Otherwise, overwrite */
-//    qDebug() << logPath;
+    QString documentPath = QStandardPaths::locate(QStandardPaths::DocumentsLocation, QString(), QStandardPaths::LocateDirectory);
+    logPath =   documentPath + QString("PixylPushLog/upload_log.txt");
+    qDebug() << logPath;
     QFile jsonFile (logPath);
-    if (jsonFile.open(QIODevice::WriteOnly) && !uploadedListJson.isEmpty()) {
-            qDebug() << "Saving log";
+    if(!uploadedListJson.isEmpty()){
+        if (jsonFile.open(QIODevice::WriteOnly)) {
+                qDebug() << "Saving log";
 
-            QJsonDocument json_doc(uploadedListJson);
-            QString json_string = json_doc.toJson();
+                QJsonDocument json_doc(uploadedListJson);
+                QString json_string = json_doc.toJson();
 
-            jsonFile.write(json_string.toLocal8Bit());
-            jsonFile.close();
-        }
-        else{
-            qDebug() << "failed to open save file" << endl;
-            return;
-        }
+                jsonFile.write(json_string.toLocal8Bit());
+                jsonFile.close();
+            }
+            else{
+                qDebug() << "failed to open save file" << endl;
+    //            return;
+            }
+    }else{
+        qDebug() << "Uploaded list is empty" << endl;
+    }
 }
 
 void MainWindow::sendNow(QString const &to, QString const &subject, QString const &body){

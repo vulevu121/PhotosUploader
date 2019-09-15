@@ -40,6 +40,6 @@
     </qresource>
     <qresource prefix="/">
         <file>camera.ico</file>
-        <file alias="client_secret">client_secret_1044474243779-a1gndnc2as4cc5c6ufksmbetoafi5mcr.apps.googleusercontent.com.json</file>
+        <file alias="client_secret">client_secret_176632045823-dt809lapid03gbogvi65etmvrsvu1cct.apps.googleusercontent.com.json</file>
     </qresource>
 </RCC>
