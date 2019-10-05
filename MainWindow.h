@@ -80,6 +80,7 @@ private slots:
 public slots:
     void logInit();
     void importLog();
+    void importFolderLog(QString const &folder_path);
     void saveLog();
     void saveAlbumId(QString const &id);
 

@@ -255,7 +255,6 @@ void MainWindow::addFolder() {
         /**************************************************************************************/
 
         /********* Import the upload log in the given folder / create new file if not exists  **********/
-        qDebug() << folderPath;
         importFolderLog(folderPath);
         /***********************************************************************************************/
     }
