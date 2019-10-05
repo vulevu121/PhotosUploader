@@ -132,9 +132,15 @@ void GooglePhoto::UploadPicData(QString const &path){
         Uploading = true;
 
         /* Read binary data of the file */
+        QFileInfo info(path);
         QFile file(path);
         fileName  = file.fileName();
         qDebug() << "File exists:" << file.exists();
+
+//        qDebug() << path;
+//        qDebug() << fileName;
+//        qDebug() << info.fileName();
+
         file.open(QIODevice::ReadOnly);
         QByteArray fileBytes = file.readAll();
         file.close();
@@ -143,8 +149,7 @@ void GooglePhoto::UploadPicData(QString const &path){
         QNetworkRequest req (QUrl("https://photoslibrary.googleapis.com/v1/uploads"));
         req.setRawHeader("Authorization","Bearer "+ accessToken.toUtf8());
         req.setRawHeader("Content-Type","application/octet-stream");
-        req.setRawHeader("X-Goog-Upload-File-Name",file.fileName().toUtf8());
-        req.setRawHeader("X-Goog-Upload-File-Name","rdm1.jpg");
+//        req.setRawHeader("X-Goog-Upload-File-Name",info.fileName().toLocal8Bit());
         req.setRawHeader("X-Goog-Upload-Protocol", "raw");
 
         manager->post(req, fileBytes);
@@ -275,6 +280,7 @@ void GooglePhoto::CreateAlbumReply(QNetworkReply * reply){
 //        qDebug() << "Album link:" << albumURL;
         manager->disconnect();
         emit albumCreated();
+        emit albumIdChanged(albumID);
         emit showMessage("Album created successfully");
      }
 }

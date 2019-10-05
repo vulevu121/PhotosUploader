@@ -62,7 +62,6 @@ MainWindow::MainWindow(QWidget *parent) :
     queueTimerInit();
     folderTimerInit();
     saveTimerInit();
-//    logInit();
 //    emailInit();
     /* Start scan on start up option */
     if(settings.value("startScanningStartup").toBool()){
@@ -71,6 +70,10 @@ MainWindow::MainWindow(QWidget *parent) :
 
     connect(ui->actionEmail, SIGNAL(triggered()), this, SLOT(showEmailTemplate()));
     connect(ui->actionSMS, SIGNAL(triggered()), this, SLOT(showSMSTemplate()));
+
+    /* import uploadedListJson */
+    importLog();
+
 }
 
 void MainWindow::syncSettings() {
@@ -108,7 +111,7 @@ void MainWindow::syncSettings() {
 
 void MainWindow::saveTimerInit(){
     saveTimer = new QTimer(this);
-    saveTimer->start(50000);
+    saveTimer->start(10000);
     connect(saveTimer,SIGNAL(timeout()),this,SLOT(saveLog()));
 }
 void MainWindow::queueTimerStart(){
@@ -225,15 +228,13 @@ void MainWindow::addFolder() {
         QList<QStandardItem *> watchRow({
             new QStandardItem(dir.dirName()),
             new QStandardItem("Queue"),
-//            new QStandardItem(QString::number(dir.count())),
             new QStandardItem(QString::number(num_files)),
             new QStandardItem(QDateTime::currentDateTime().toString("MM/dd/yyyy hh:mm AP")),
-            new QStandardItem(fileInfo.lastModified().toString()),
+            new QStandardItem(fileInfo.lastModified().toString("MM/dd/yyyy hh:mm AP")),
             new QStandardItem(folderPath),
         });
 
         this->watchModel->appendRow(watchRow);
-
         ui->statusBar->showMessage("Folder added to watchlist");
         ui->watchTableView->resizeColumnsToContents();
     }
@@ -307,6 +308,8 @@ void MainWindow::createAlbum(QString const &name, QString const &desc, QString c
             gphoto->SetAlbumDescription(desc);
             gphoto->CreateAlbum();
             connect(gphoto,SIGNAL(albumCreated()),gphoto,SLOT(ShareAlbum()));
+            connect(gphoto,SIGNAL(albumIdChanged(QString const &)),this,SLOT(saveAlbumId(QString const &)));
+
         }
 
         /* Show message */
@@ -340,13 +343,17 @@ void MainWindow::queueUpload(){
              QString file = queueModel->item(row,(queueHeader.indexOf("Path")))->text();
              if(queueModel->item(row,(queueHeader.indexOf("Status")))->text() == "Queue"){
                  qDebug() << "+";
-                 qDebug() << gphoto->isAlbumReady() << !gphoto->isUploading();
+//                 qDebug() << gphoto->isAlbumReady() << !gphoto->isUploading();
 
                      if(gphoto->isAlbumReady() && !gphoto->isUploading()){
 
-                            if(!uploadedList.contains(file)){
+                            if(!uploadedList.contains(file) && isReady){
+                                /* Using isReady flag to prevent duplicate entry being saved to
+                                 * the json log file. Basically, each photo will be uploaded sequencially and
+                                 * the uploadedList will always include all the uploaded photo. There wont be
+                                 * an instance where this upload loop runs before the uploadedList function is done */
                                 qDebug() << "++";
-
+                                isReady = false;
                                 qDebug() << "Uploading" << file;
                                 gphoto->UploadPhoto(file);
 
@@ -357,10 +364,11 @@ void MainWindow::queueUpload(){
                                 connect(gphoto,SIGNAL(mediaCreateFailed(QString const)),this,SLOT(updateFailedList(QString const)));
                             }else{
                                 /* In case internet connection broke and resume */
-                                QString msg = "File is already uploaded";
+                                QString msg = file + "File is already uploaded";
                                 qDebug() << msg;
                                 ui->statusBar->showMessage(msg);
                                 queueModel->item(row,(queueHeader.indexOf("Status")))->setText("Completed");
+                                queueModel->item(row,(queueHeader.indexOf("Album")))->setText(gphoto->GetAlbumName());
                             }
                        }
              }else if(queueModel->item(row,(queueHeader.indexOf("Status")))->text() == "Uploading"){
@@ -380,7 +388,7 @@ void MainWindow::queueUpload(){
                                         }
                                   }
                             }
-             }
+                   }
          }
 }
 
@@ -398,6 +406,23 @@ void MainWindow::resetFailItems(){
 void MainWindow::updateUploadedList(QString const &filename){
     QFileInfo info(filename);
     QJsonObject obj;
+
+    /* ############ make a list of the folder paths in the watchModel ############# */
+    QStringList watchFolders;
+    for(int row = 0; row < watchModel->rowCount();row++){
+        watchFolders.append(watchModel->item(row,(watchHeader.indexOf("Path")))->text());
+    }
+
+    /* If this photo was in a watch folder, set folder_watch == True */
+    QString folder_path = info.dir().path();
+    if(watchFolders.contains(folder_path))
+        obj["folder_watch"] = "True";
+    /* else set to False */
+    else
+        obj["folder_watch"] = "False";
+    /* ####  NOTE: doing this allow importLog to populate the queue and the watchFolder correctly next run ##### */
+
+    /* Add the remaining info of each photo to the json object*/
     obj["name"] = info.fileName();
     obj["path"] = info.filePath();
     obj["album_name"] = gphoto->GetAlbumName();
@@ -407,15 +432,23 @@ void MainWindow::updateUploadedList(QString const &filename){
     obj["date_added"] = QDateTime::currentDateTime().toString("MM/dd/yyyy hh:mm AP");
     obj["url"] = gphoto->GetUploadedPhotoURL();
 
+    /* Append the object to the Json Object List */
     uploadedListJson.append(obj);
 
-    if(uploadFailedList.contains(filename)){uploadFailedList.remove(filename);}
+    /* Append the file path to the uploaded list */
     uploadedList.append(filename);
+
+    /* If a file recovered from a previous failed upload, remove the file from the failed list */
+    if(uploadFailedList.contains(filename))
+        uploadFailedList.remove(filename);
+
+    /* show status */
     ui->statusBar->showMessage(filename + " is uploaded");
 
 //    qDebug() << "After Uploaded list:" << uploadedList;
 //    qDebug() << "After Uploaded list:" << uploadedListJson;
 
+    /* ready for the next upload */
     isReady = true;
 }
 
@@ -449,9 +482,11 @@ void MainWindow::folderScan(){
             qDebug() << "Scanning foldler" << dir.path();
             /* for each file in folder, if not in queue  and uploadedList, add to queue */
             QFileInfoList images = dir.entryInfoList(QStringList() << "*.jpg" << "*.JPG",QDir::Files);
-            foreach(QFileInfo i, images){
-                if (images.length() > 0 ) {
-                    if( !queue.contains(i.filePath()) && isReady && !uploadedList.contains(i.filePath())){
+            if (images.length() > 0 ) {
+                isReady = false;
+                foreach(QFileInfo i, images){
+                    if( !queue.contains(i.filePath())  && !uploadedList.contains(i.filePath())){
+
                         QList<QStandardItem *> queueRow({
                             new QStandardItem(i.fileName()),
                             new QStandardItem("None"),
@@ -466,6 +501,7 @@ void MainWindow::folderScan(){
                         ui->queueTableView->resizeColumnsToContents();
                     }
                 }
+                isReady = true;
             }
             watchModel->item(row,(watchHeader.indexOf("No. Files")))->setText(QString::number(images.length()));
             watchModel->item(row,(watchHeader.indexOf("Status")))->setText("Scanned");
@@ -480,81 +516,7 @@ void MainWindow::emailInit(){
     }
 
 }
-void MainWindow::emailOut(){
-    email->SetToEmail("khuongnguyensac@gmail.com");
-    email->SendEmail();
-}
 
-//void MainWindow::emailOut(){
-////    qDebug() << "Opening upload log";
-//    email->SetFromEmail("info.enchanted.oc@gmail.com");
-//    /* Read the uploaded photo log file */
-//    QString path1("C:/Users/khuon/Documents/Github/PixylPush/Upload_log.txt");
-//    QJsonArray arr1;
-//     QFile jsonFile1(path1);
-//     if(jsonFile1.exists()){
-//         jsonFile1.open(QFile::ReadOnly);
-//         QJsonDocument document1 = QJsonDocument().fromJson(jsonFile1.readAll());
-//         arr1 = document1.array();
-////         qDebug() << arr1;
-
-//         jsonFile1.close();
-//    }
-//   /* Read the list of item to send */
-//   QString path("C:/Users/khuon/Documents/Github/PixylPush/Email.txt");
-//    QJsonArray arr;
-//    QFile jsonFile(path);
-//    if(jsonFile.exists()){
-//        jsonFile.open(QFile::ReadOnly);
-//        QJsonDocument document = QJsonDocument().fromJson(jsonFile.readAll());
-//        arr = document.array();
-////        qDebug() << arr;
-//        /* For each item, find the photo url, send the email, and add the status */
-//        QJsonArray outArr;
-//          for(int i = 0; i < arr.count(); i++){
-//                QJsonObject jsonItem = arr[i].toObject();
-
-//                for(int j = 0; j < arr1.count(); j++){
-//                        QJsonObject jsonPhoto = arr1[i].toObject();
-//                        if(jsonPhoto["path"].toString() == jsonItem["PhotoPath"].toString()){
-//                            /* assume GMAIL object is already authenticated and ready */
-//                            email->SetAlbumURL(jsonPhoto["url"].toString());
-//                            email->SetToEmail(jsonItem["Email"].toString());
-//                            email->SendEmail();
-////                            qDebug() << email->GetToEmail() << email->GetAlbumURL();
-//                            break;
-//                        }
-//                }
-
-//                jsonItem.insert("Status", QJsonValue("Sent"));
-//              outArr.push_back(jsonItem);
-//            }
-////          qDebug() << outArr;
-
-
-//          jsonFile.close();
-
-//          QFile outFile("C:/Users/khuon/Documents/Github/PixylPush/EmailDone.txt");
-
-//          /* if log file does not exist, create a new one. Otherwise, overwrite */
-//          if (outFile.open(QIODevice::WriteOnly)) {
-//                  qDebug() << "Saving email done log";
-
-//                  QJsonDocument json_doc(outArr);
-//                  QString json_string = json_doc.toJson();
-
-//                  outFile.write(json_string.toLocal8Bit());
-//                  outFile.close();
-//              }
-//              else{
-//                  qDebug() << "failed to open save file" << endl;
-//              }
-//    }else{
-//        qDebug() << "No log file";
-
-//    }
-
-//}
 
 QString MainWindow::getAlbumIdFromFile(){
     qDebug() << "Opening upload log";
@@ -576,13 +538,104 @@ QString MainWindow::getAlbumIdFromFile(){
 //             qDebug() << id;
              settings->setValue("lastUsedAlbumId",id);
              settings->sync();
-
              return id;
         }
     else{
             qDebug() << "No log file";
         }
      return "";
+}
+
+void MainWindow::importLog(){
+    // Required behavior
+    // Search the current directory for upload_log.txt
+
+    // If found, import into uploadedList and uploadedListJson
+
+    // Else, create a new file
+
+    // Test Behavior: import a log and populate all queueTable and watchFolder ///
+    QString documentPath = QStandardPaths::locate(QStandardPaths::DocumentsLocation, QString(), QStandardPaths::LocateDirectory);
+    QString pathToLog =   documentPath + QString("PixylPushLog/upload_log.txt");
+    QFile file(pathToLog);
+    if(file.exists()){
+            file.open(QFile::ReadOnly);
+            QJsonDocument document = QJsonDocument().fromJson(file.readAll());
+            file.close();
+            uploadedListJson = document.array();
+            uploadedList = QStringList();
+            // Need to copy all the paths into uploadedList variable
+            for(int i = 0; i < uploadedListJson.count();i ++){
+                QJsonObject obj = uploadedListJson[i].toObject();
+                uploadedList.append(obj["path"].toString());
+            }
+//        qDebug() << uploadedListJson;
+//        qDebug() << uploadedList;
+
+          /* Keep track of which folder is added to watchTableView from the log, keep in mind
+           many entries will have the same folder, so we have to avoid duplicate entries */
+          QStringList addedFolderList;
+
+          //Also I need to keep track of the list of folders as well. ????
+
+          // Now all those entries should be populated to the queue with status = Completed
+            for(int i = 0; i < uploadedListJson.count();i ++){
+                QJsonObject obj = uploadedListJson[i].toObject();
+                QFileInfo file(obj["path"].toString());
+
+                /* if the file exists (i.e it has not been moved since uploaded
+                 * then add to queue with status == completed */
+                QString temp_status;
+                if (file.exists())
+                    temp_status = obj["status"].toString();
+                /* else, set status == File missing as an indication*/
+                else
+                    temp_status = "File is missing";
+
+                /* Create the entry */
+                QList<QStandardItem *> queueRow({
+                    new QStandardItem(obj["name"].toString()),
+                    new QStandardItem(obj["album_name"].toString()),
+                    new QStandardItem(temp_status),
+                    new QStandardItem(obj["date_added"].toString()),
+                    new QStandardItem(file.lastModified().toString("MM/dd/yyyy hh:mm AP")),
+                    new QStandardItem(obj["path"].toString())
+                });
+
+                this->queueModel->appendRow(queueRow);
+                ui->queueTableView->resizeColumnsToContents();
+
+                /*********************************************/
+
+                /* If "folder_watch" of this photo == True,
+                 * populate the watchModel view, else do nothing
+                 * NOTE: doing this to distinguish queue item coming from folder
+                        and queue item added manually*/
+                if(obj["folder_watch"].toString() == "True"){
+                    QDir folder(file.dir().path());
+                    QFileInfo folderInfo(folder.path());
+                    int num_files = folder.entryInfoList(QStringList() << "*.jpg" << "*.JPG",QDir::Files).length();
+
+                    /* If folder path is not in watchTable, add it*/
+                    if(!addedFolderList.contains(folder.path())){
+                        addedFolderList.append(folder.path());
+                        /* Create the entry */
+                        QList<QStandardItem *> watchRow({
+                            new QStandardItem(folder.dirName()),
+                            new QStandardItem("Scanned"),
+                            new QStandardItem(QString::number(num_files)),
+                            new QStandardItem(obj["date_added"].toString()),
+                            new QStandardItem(folderInfo.lastModified().toString("MM/dd/yyyy hh:mm AP")),
+                            new QStandardItem(folder.path()),
+                        });
+
+                        this->watchModel->appendRow(watchRow);
+                        ui->watchTableView->resizeColumnsToContents();
+                    }// Otherwise, do nothing to prevent duplicate
+                }
+            }
+
+    }
 }
 
 void MainWindow::logInit(){
@@ -592,12 +645,19 @@ void MainWindow::logInit(){
     if (filePath.length() > 0) {
         qDebug() << filePath;
 //        logPath = filePath;
-        };
+        }
+}
+
+void MainWindow::saveAlbumId(QString const &id){
+    /* save current album id to registry */
+        qDebug() << "Saving album ID to registry after closing Create Album Dialog";
+        settings->setValue("lastUsedAlbumId",id);
+        settings->sync();
 }
 
 void MainWindow::saveLog(){
     /* save current album id to registry */
-    if(gphoto->isAlbumReady()){
+    if(gphoto != nullptr && gphoto->isAlbumReady()){
         qDebug() << "Saving album ID to registry";
         settings->setValue("lastUsedAlbumId",gphoto->GetAlbumID());
         settings->sync();
@@ -657,3 +717,77 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
+//void MainWindow::emailOut(){
+//    email->SetToEmail("khuongnguyensac@gmail.com");
+//    email->SendEmail();
+//}
+
+void MainWindow::emailOut(){
+//    qDebug() << "Opening upload log";
+    email->SetFromEmail("info.enchanted.oc@gmail.com");
+    /* Read the uploaded photo log file */
+    QString path1("C:/Users/khuon/Documents/Github/PixylPush/Upload_log.txt");
+    QJsonArray arr1;
+     QFile jsonFile1(path1);
+     if(jsonFile1.exists()){
+         jsonFile1.open(QFile::ReadOnly);
+         QJsonDocument document1 = QJsonDocument().fromJson(jsonFile1.readAll());
+         arr1 = document1.array();
+//         qDebug() << arr1;
+
+         jsonFile1.close();
+    }
+   /* Read the list of item to send */
+   QString path("C:/Users/khuon/Documents/Github/PixylPush/Email.txt");
+    QJsonArray arr;
+    QFile jsonFile(path);
+    if(jsonFile.exists()){
+        jsonFile.open(QFile::ReadOnly);
+        QJsonDocument document = QJsonDocument().fromJson(jsonFile.readAll());
+        arr = document.array();
+//        qDebug() << arr;
+        /* For each item, find the photo url, send the email, and add the status */
+        QJsonArray outArr;
+          for(int i = 0; i < arr.count(); i++){
+                QJsonObject jsonItem = arr[i].toObject();
+
+                for(int j = 0; j < arr1.count(); j++){
+                        QJsonObject jsonPhoto = arr1[i].toObject();
+                        if(jsonPhoto["path"].toString() == jsonItem["PhotoPath"].toString()){
+                            /* assume GMAIL object is already authenticated and ready */
+                            email->SetAlbumURL(jsonPhoto["url"].toString());
+                            email->SetToEmail(jsonItem["Email"].toString());
+                            email->SendEmail();
+//                            qDebug() << email->GetToEmail() << email->GetAlbumURL();
+                            break;
+                        }
+                }
+
+                jsonItem.insert("Status", QJsonValue("Sent"));
+              outArr.push_back(jsonItem);
+            }
+//          qDebug() << outArr;
+
+
+          jsonFile.close();
+
+          QFile outFile("C:/Users/khuon/Documents/Github/PixylPush/EmailDone.txt");
+
+          /* if log file does not exist, create a new one. Otherwise, overwrite */
+          if (outFile.open(QIODevice::WriteOnly)) {
+                  qDebug() << "Saving email done log";
+
+                  QJsonDocument json_doc(outArr);
+                  QString json_string = json_doc.toJson();
+
+                  outFile.write(json_string.toLocal8Bit());
+                  outFile.close();
+              }
+              else{
+                  qDebug() << "failed to open save file" << endl;
+              }
+    }else{
+        qDebug() << "No log file";
+    }
+
+}

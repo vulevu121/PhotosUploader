@@ -10,6 +10,7 @@
 #include <QString>
 #include <QFile>
 #include <QUrl>
+#include <QFileInfo>
 #include "googleoauth2.h"
 
 class GooglePhoto : public QObject
@@ -29,7 +30,7 @@ private:
     QString albumDescription;
     QString albumURL;
     QString pathToFile;
-    QString fileName;
+    QString fileName;  //include the absolute path in the file name
     QStringList uploadTokenList;
     bool Uploading = false;
     bool albumReady = false;

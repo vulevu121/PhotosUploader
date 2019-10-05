@@ -79,7 +79,10 @@ private slots:
 
 public slots:
     void logInit();
+    void importLog();
     void saveLog();
+    void saveAlbumId(QString const &id);
+
 
 private:
     Ui::MainWindow *ui;

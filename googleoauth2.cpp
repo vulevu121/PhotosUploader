@@ -4,7 +4,7 @@ GoogleOAuth2::GoogleOAuth2(QObject *parent) : QObject(parent)
 {   /* Initilize once when the class is created */
     profile = new QWebEngineProfile(QString("cookieData"),this);
     profile->setPersistentCookiesPolicy(QWebEngineProfile::ForcePersistentCookies);
-    profile->setPersistentStoragePath("C:/Users/khuon/Documents/Github/PixylPush/Cookies");
+//    profile->setPersistentStoragePath("C:/Users/khuon/Documents/Github/PixylPush/Cookies");
     page = new QWebEnginePage(profile,this);
     view = new QWebEngineView();
 
