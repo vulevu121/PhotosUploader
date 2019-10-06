@@ -4,7 +4,6 @@ GoogleOAuth2::GoogleOAuth2(QObject *parent) : QObject(parent)
 {   /* Initilize once when the class is created */
     profile = new QWebEngineProfile(QString("cookieData"),this);
     profile->setPersistentCookiesPolicy(QWebEngineProfile::ForcePersistentCookies);
-//    profile->setPersistentStoragePath("C:/Users/khuon/Documents/Github/PixylPush/Cookies");
     page = new QWebEnginePage(profile,this);
     view = new QWebEngineView();
 
@@ -15,7 +14,7 @@ void GoogleOAuth2::SetScope(QString const  &RequestScope){
         qDebug() << "Scope for Gmail";
         scope = QString("?scope=https://www.googleapis.com/auth/gmail.send");
     }else{
-        qDebug() << "Scope for Google Photo";
+        qDebug() << "Scope for Google Photo and Gmail";
         scope = QString("?scope=https://www.googleapis.com/auth/photoslibrary.sharing https://www.googleapis.com/auth/photoslibrary https://www.googleapis.com/auth/gmail.send"); // scope for sharing
     }
     emit scopeSet();
@@ -68,8 +67,8 @@ void GoogleOAuth2::AuthenticateReply(QNetworkReply *reply) {
         connect(view,SIGNAL(urlChanged(QUrl)),this,SLOT(AuthenticateRedirectReply(QUrl)));
         manager->disconnect();
 
-        qDebug() << view->page()->profile()->persistentStoragePath();
-        qDebug() << view->page()->profile()->persistentCookiesPolicy();
+//        qDebug() << view->page()->profile()->persistentStoragePath();
+//        qDebug() << view->page()->profile()->persistentCookiesPolicy();
     }
 }
 
@@ -134,7 +133,7 @@ void GoogleOAuth2::ExchangeTokenReply(QNetworkReply *reply) {
         /* Use for testing only */
 //        QTimer::singleShot(expireTime*2,this,SLOT(Authenticate())); // Conversion to milisecond
 
-        qDebug() << "New Access Token:" << accessToken;
+//        qDebug() << "New Access Token:" << accessToken;
         /* disconnext previous connect */
         manager->disconnect();
         emit authenticated(accessToken);

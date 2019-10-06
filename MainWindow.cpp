@@ -63,16 +63,18 @@ MainWindow::MainWindow(QWidget *parent) :
     folderTimerInit();
     saveTimerInit();
 //    emailInit();
+
     /* Start scan on start up option */
-    if(settings.value("startScanningStartup").toBool()){
+    if(settings.value("startScanningStartup").toBool())
         resumeQueue();
-    }
+
+    /* disable some options */
+    ui->actionPause->setEnabled(false);
+    ui->actionCreateAlbum->setEnabled(false);
+    ui->actionLogOut->setEnabled(false);
 
     connect(ui->actionEmail, SIGNAL(triggered()), this, SLOT(showEmailTemplate()));
     connect(ui->actionSMS, SIGNAL(triggered()), this, SLOT(showSMSTemplate()));
-
-    /* import uploadedListJson */
-//    importLog();
 
 }
 
@@ -111,7 +113,7 @@ void MainWindow::syncSettings() {
 
 void MainWindow::saveTimerInit(){
     saveTimer = new QTimer(this);
-    saveTimer->start(10000);
+    saveTimer->start(30000);
     connect(saveTimer,SIGNAL(timeout()),this,SLOT(saveLog()));
 }
 
@@ -185,8 +187,8 @@ void MainWindow::addQueue() {
                 new QStandardItem(fileInfo.fileName()),
                 new QStandardItem("MyAlbum"),
                 new QStandardItem("Queue"),
-                new QStandardItem(QDateTime::currentDateTime().toString("MM/dd/yyyy hh:mm AP")),
-                new QStandardItem(fileInfo.lastModified().toString()),
+                new QStandardItem(QDateTime::currentDateTime().toString(timeFormat)),
+                new QStandardItem(fileInfo.lastModified().toString(timeFormat)),
                 new QStandardItem(filePath)
             });
 
@@ -227,8 +229,8 @@ void MainWindow::addFolder() {
             new QStandardItem(dir.dirName()),
             new QStandardItem("Queue"),
             new QStandardItem(QString::number(num_files)),
-            new QStandardItem(QDateTime::currentDateTime().toString("MM/dd/yyyy hh:mm AP")),
-            new QStandardItem(fileInfo.lastModified().toString("MM/dd/yyyy hh:mm AP")),
+            new QStandardItem(QDateTime::currentDateTime().toString(timeFormat)),
+            new QStandardItem(fileInfo.lastModified().toString(timeFormat)),
             new QStandardItem(folderPath),
         });
 
@@ -249,14 +251,12 @@ void MainWindow::addFolder() {
         qDebug() << "Saving watch folders to registry";
         QJsonDocument watchJsonDoc(watchArr);
         QString watchJsonString (watchJsonDoc.toJson());
-        watchJsonString.remove(" ");
         settings->setValue("lastScannedAlbums",watchJsonString);
         settings->sync();
         /**************************************************************************************/
 
         /********* Import the upload log in the given folder / create new file if not exists  **********/
-        qDebug() << folderPath;
-        importFolderLog(folderPath);
+        //importFolderLog(folderPath);
         /***********************************************************************************************/
     }
 
@@ -287,7 +287,12 @@ void MainWindow::googleLogIn(){
     connect(auth,SIGNAL(authenticated(QString const)),gphoto,SLOT(SetAccessToken(QString const)));
     connect(auth,SIGNAL(authenticated(QString const)),email,SLOT(SetAccessToken(QString const)));
     connect(auth,SIGNAL(showMessage(QString const)),ui->statusBar, SLOT(showMessage(QString const)));
-//    connect(auth,SIGNAL(authenticateFailed(QString const)),ui->statusBar, SLOT(showMessage(QString const)));
+
+    /* enable album create button & disable login button */
+    ui->actionCreateAlbum->setEnabled(true);
+    ui->actionLogIn->setEnabled(false);
+    ui->actionLogOut->setEnabled(true);
+
 }
 
 void MainWindow::googleLogOut(){
@@ -298,6 +303,12 @@ void MainWindow::googleLogOut(){
         stopQueue();
         clearQueue();
         clearWatchlist();
+        /* disable album create button & enable login button*/
+        ui->actionCreateAlbum->setEnabled(false);
+        ui->actionLogIn->setEnabled(true);
+        ui->actionLogOut->setEnabled(false);
+
+
     }else{
         ui->statusBar->showMessage("You are not currently logged in.");
     }
@@ -319,6 +330,7 @@ void MainWindow::deleteAllObjects(){
 void MainWindow::createAlbum(QString const &name, QString const &desc, QString const &albumId, bool useExistingAlbum) {
 //    gphoto = new GooglePhoto(this);
 //    connect(gphoto,SIGNAL(notAuthenticated(QString const)), ui->statusBar, SLOT(showMessage(QString const)));
+
     if (gphoto->isAuthenticated()){
         if (useExistingAlbum) {
             gphoto->SetTargetAlbumToUpload(albumId);
@@ -335,6 +347,11 @@ void MainWindow::createAlbum(QString const &name, QString const &desc, QString c
 
         /* Show message */
         connect(gphoto,SIGNAL(showMessage(QString const)), ui->statusBar, SLOT(showMessage(QString const)));
+
+        /* import last sannced folder from registry */
+        connect(gphoto,SIGNAL(albumIdConnected()),this,SLOT(importLastScannedFolders()));
+
+
     }
     else{
         QString msg = "Google Photo is not authenticated. Please log in";
@@ -358,23 +375,21 @@ void MainWindow::showCreateAlbumDialog() {
 }
 
 void MainWindow::queueUpload(){
-     qDebug() << "Checking upload queue...";
+//     qDebug() << "Checking upload queue...";
      /* Iterate through the rows in the model, if status is Queue, upload photo,
       * If status is Completed, pass*/
      for(int row = 0; row < queueModel->rowCount();row++){
              QString file = queueModel->item(row,(queueHeader.indexOf("Path")))->text();
              if(queueModel->item(row,(queueHeader.indexOf("Status")))->text() == "Queue"){
-                 qDebug() << "+";
+//                 qDebug() << "+";
 //                 qDebug() << gphoto->isAlbumReady() << !gphoto->isUploading();
 
                      if(gphoto->isAlbumReady() && !gphoto->isUploading()){
-
                             if(!uploadedList.contains(file) && isReady){
                                 /* Using isReady flag to prevent duplicate entry being saved to
                                  * the json log file. Basically, each photo will be uploaded sequencially and
                                  * the uploadedList will always include all the uploaded photo. There wont be
                                  * an instance where this upload loop runs before the uploadedList function is done */
-                                qDebug() << "++";
                                 isReady = false;
                                 qDebug() << "Uploading" << file;
                                 gphoto->UploadPhoto(file);
@@ -387,7 +402,6 @@ void MainWindow::queueUpload(){
                             }else{
                                 /* In case internet connection broke and resume */
                                 QString msg = file + "File is already uploaded";
-                                qDebug() << msg;
                                 ui->statusBar->showMessage(msg);
                                 queueModel->item(row,(queueHeader.indexOf("Status")))->setText("Completed");
                                 queueModel->item(row,(queueHeader.indexOf("Album")))->setText(gphoto->GetAlbumName());
@@ -395,7 +409,7 @@ void MainWindow::queueUpload(){
                        }
              }else if(queueModel->item(row,(queueHeader.indexOf("Status")))->text() == "Uploading"){
                       /* if the status is "Uploading", check if it is complete, if so then change status to completed */
-                     qDebug() << "-";
+//                     qDebug() << "-";
 
                      if(uploadedList.contains(file)){queueModel->item(row,(queueHeader.indexOf("Status")))->setText("Completed");
                      }else if(uploadFailedList.contains(file)){
@@ -435,11 +449,7 @@ void MainWindow::updateUploadedList(QString const &filename){
 
     /* If this photo was in a watch folder, set folder_watch == True */
     QString folder_path = info.dir().path();
-    if(watchFolders.contains(folder_path))
-        obj["folder_watch"] = "True";
-    /* else set to False */
-    else
-        obj["folder_watch"] = "False";
+    obj["folder_watch"] = (watchFolders.contains(folder_path)) ? "True":"False";
     /* ####  NOTE: doing this allow importLog to populate the queue and the watchFolder correctly next run ##### */
 
     /* Add the remaining info of each photo to the json object*/
@@ -449,24 +459,32 @@ void MainWindow::updateUploadedList(QString const &filename){
     obj["album_url"] = gphoto->GetAlbumURL();
     obj["album_id"] = gphoto->GetAlbumID();
     obj["status"] = "Completed";
-    obj["date_added"] = QDateTime::currentDateTime().toString("MM/dd/yyyy hh:mm AP");
+    obj["date_added"] = QDateTime::currentDateTime().toString(timeFormat);
     obj["url"] = gphoto->GetUploadedPhotoURL();
 
-    /* Append the object to the Json Object List */
-    uploadedListJson.append(obj);
+    /* Prevent duplicate entries in the list */
+    QJsonValue v(obj);
+    /* Add to list if there is no duplicate */
+    if(!uploadedListJson.contains(v)){
+        /* Append the object to the Json Object List */
+        uploadedListJson.append(obj);
 
-    /* Append the file path to the uploaded list */
-    uploadedList.append(filename);
+        /* Append the file path to the uploaded list */
+        uploadedList.append(filename);
 
-    /* If a file recovered from a previous failed upload, remove the file from the failed list */
-    if(uploadFailedList.contains(filename))
-        uploadFailedList.remove(filename);
 
-    /* show status */
-    ui->statusBar->showMessage(filename + " is uploaded");
+        /* If a file recovered from a previous failed upload, remove the file from the failed list */
+        if(uploadFailedList.contains(filename))
+            uploadFailedList.remove(filename);
 
-//    qDebug() << "After Uploaded list:" << uploadedList;
-//    qDebug() << "After Uploaded list:" << uploadedListJson;
+        /* show status */
+        ui->statusBar->showMessage(filename + " is uploaded");
+
+//        qDebug() << "After Uploaded list:" << uploadedList;
+//        qDebug() << "After Uploaded list:" << uploadedListJson;
+    }
+    /* Update upload log */
+    saveLog();
 
     /* ready for the next upload */
     isReady = true;
@@ -511,8 +529,8 @@ void MainWindow::folderScan(){
                             new QStandardItem(i.fileName()),
                             new QStandardItem("None"),
                             new QStandardItem("Queue"),
-                            new QStandardItem(i.birthTime().toString()),
-                            new QStandardItem(i.lastModified().toString()),
+                            new QStandardItem(i.birthTime().toString(timeFormat)),
+                            new QStandardItem(i.lastModified().toString(timeFormat)),
                             new QStandardItem(i.filePath())
                         });
 
@@ -566,95 +584,6 @@ QString MainWindow::getAlbumIdFromFile(){
      return "";
 }
 
-void MainWindow::importLog(){
-    // Required behavior
-    // Search the current directory for upload_log.txt
-
-    // If found, import into uploadedList and uploadedListJson
-
-    // Else, create a new file
-
-    // Test Behavior: import a log and populate all queueTable and watchFolder ///
-    QString documentPath = QStandardPaths::locate(QStandardPaths::DocumentsLocation, QString(), QStandardPaths::LocateDirectory);
-    QString pathToLog =   documentPath + QString("PixylPushLog/upload_log.txt");
-    QFile file(pathToLog);
-    if(file.exists()){
-            file.open(QFile::ReadOnly);
-            QJsonDocument document = QJsonDocument().fromJson(file.readAll());
-            file.close();
-            uploadedListJson = document.array();
-            uploadedList = QStringList();
-            // Need to copy all the paths into uploadedList variable
-            for(int i = 0; i < uploadedListJson.count();i ++){
-                QJsonObject obj = uploadedListJson[i].toObject();
-                uploadedList.append(obj["path"].toString());
-            }
-//        qDebug() << uploadedListJson;
-//        qDebug() << uploadedList;
-
-          /* Keep track of which folder is added to watchTableView from the log, keep in mind
-           many entries will have the same folder, so we have to avoid duplicate entries */
-          QStringList addedFolderList;
-
-          // Now all those entries should be populated to the queue with status = Completed
-            for(int i = 0; i < uploadedListJson.count();i ++){
-                QJsonObject obj = uploadedListJson[i].toObject();
-                QFileInfo file(obj["path"].toString());
-
-                /* if the file exists (i.e it has not been moved since uploaded
-                 * then add to queue with status == completed */
-                QString temp_status;
-                if (file.exists())
-                    temp_status = obj["status"].toString();
-                /* else, set status == File missing as an indication*/
-                else
-                    temp_status = "File is missing";
-
-                /* Create the entry */
-                QList<QStandardItem *> queueRow({
-                    new QStandardItem(obj["name"].toString()),
-                    new QStandardItem(obj["album_name"].toString()),
-                    new QStandardItem(temp_status),
-                    new QStandardItem(obj["date_added"].toString()),
-                    new QStandardItem(file.lastModified().toString("MM/dd/yyyy hh:mm AP")),
-                    new QStandardItem(obj["path"].toString())
-                });
-
-                this->queueModel->appendRow(queueRow);
-                ui->queueTableView->resizeColumnsToContents();
-
-                /*********************************************/
-
-                /* If "folder_watch" of this photo == True,
-                 * populate the watchModel view, else do nothing
-                 * NOTE: doing this to distinguish queue item coming from folder
-                        and queue item added manually*/
-                if(obj["folder_watch"].toString() == "True"){
-                    QDir folder(file.dir().path());
-                    QFileInfo folderInfo(folder.path());
-                    int num_files = folder.entryInfoList(QStringList() << "*.jpg" << "*.JPG",QDir::Files).length();
-
-                    /* If folder path is not in watchTable, add it*/
-                    if(!addedFolderList.contains(folder.path())){
-                        addedFolderList.append(folder.path());
-                        /* Create the entry */
-                        QList<QStandardItem *> watchRow({
-                            new QStandardItem(folder.dirName()),
-                            new QStandardItem("Scanned"),
-                            new QStandardItem(QString::number(num_files)),
-                            new QStandardItem(obj["date_added"].toString()),
-                            new QStandardItem(folderInfo.lastModified().toString("MM/dd/yyyy hh:mm AP")),
-                            new QStandardItem(folder.path()),
-                        });
-
-                        this->watchModel->appendRow(watchRow);
-                        ui->watchTableView->resizeColumnsToContents();
-                    }// Otherwise, do nothing to prevent duplicate
-                }
-            }
-
-    }
-}
 
 void MainWindow::importFolderLog(QString const &folder_path){
     // Required behavior
@@ -700,7 +629,7 @@ void MainWindow::importFolderLog(QString const &folder_path){
                     new QStandardItem(obj["album_name"].toString()),
                     new QStandardItem(temp_status),
                     new QStandardItem(obj["date_added"].toString()),
-                    new QStandardItem(file.lastModified().toString("MM/dd/yyyy hh:mm AP")),
+                    new QStandardItem(file.lastModified().toString(timeFormat)),
                     new QStandardItem(obj["path"].toString())
                 });
 
@@ -708,7 +637,32 @@ void MainWindow::importFolderLog(QString const &folder_path){
                 ui->queueTableView->resizeColumnsToContents();
 
                 /*********************************************/
+                /* If "folder_watch" of this photo == True,
+                 * populate the watchModel view, else do nothing
+                 * NOTE: doing this to distinguish queue item coming from folder
+                        and queue item added manually*/
+                if(obj["folder_watch"].toString() == "True"){
+                    QDir folder(file.dir().path());
+                    QFileInfo folderInfo(folder.path());
+                    int num_files = folder.entryInfoList(QStringList() << "*.jpg" << "*.JPG",QDir::Files).length();
 
+                    /* If folder path is not in watchTable, add it*/
+                    if(!addedFolderList.contains(folder.path())){
+                        addedFolderList.append(folder.path());
+                        /* Create the entry */
+                        QList<QStandardItem *> watchRow({
+                            new QStandardItem(folder.dirName()),
+                            new QStandardItem("Scanned"),
+                            new QStandardItem(QString::number(num_files)),
+                            new QStandardItem(obj["date_added"].toString()),
+                            new QStandardItem(folderInfo.lastModified().toString(timeFormat)),
+                            new QStandardItem(folder.path()),
+                        });
+
+                        this->watchModel->appendRow(watchRow);
+                        ui->watchTableView->resizeColumnsToContents();
+                    }// Otherwise, do nothing to prevent duplicate
+                }
 
             }
 
@@ -728,6 +682,15 @@ void MainWindow::importFolderLog(QString const &folder_path){
 //        qDebug() << uploadedListJson;
 //        qDebug() << uploadedList;
 
+}
+
+void MainWindow::importLastScannedFolders(){
+    QJsonDocument document = QJsonDocument().fromJson(settings->value("lastScannedAlbums").toByteArray());
+    QJsonArray watchArr = document.array();
+    for(int i = 0; i < watchArr.count();i++){
+        QJsonObject jsonObj = watchArr[i].toObject();
+        importFolderLog(jsonObj["folder_path"].toString());
+    }
 }
 
 void MainWindow::logInit(){
@@ -750,30 +713,53 @@ void MainWindow::saveAlbumId(QString const &id){
 void MainWindow::saveLog(){
     /* save current album id to registry */
     if(gphoto != nullptr && gphoto->isAlbumReady()){
-        qDebug() << "Saving album ID to registry";
+//        qDebug() << "Saving album ID to registry";
         settings->setValue("lastUsedAlbumId",gphoto->GetAlbumID());
         settings->sync();
     }
-    /* if log file does not exist, create a new one. Otherwise, overwrite */
-    QString documentPath = QStandardPaths::locate(QStandardPaths::DocumentsLocation, QString(), QStandardPaths::LocateDirectory);
-    logPath =   documentPath + QString("PixylPushLog/upload_log.txt");
-    qDebug() << logPath;
-    QFile jsonFile (logPath);
-    if(!uploadedListJson.isEmpty()){
-        if (jsonFile.open(QIODevice::WriteOnly)) {
-                qDebug() << "Saving log";
 
-                QJsonDocument json_doc(uploadedListJson);
-                QString json_string = json_doc.toJson();
+    /* Create a list of the folder paths in the watchModel */
+    QStringList watchPaths;
+    for(int row = 0; row < watchModel->rowCount();row++){
+        watchPaths.append(watchModel->item(row,(watchHeader.indexOf("Path")))->text());
+    }
 
-                jsonFile.write(json_string.toLocal8Bit());
-                jsonFile.close();
+    /* Save the master Json List to Document folder */
+    saveJsonList();
+
+    /* Iterate through the paths */
+    foreach(QString path, watchPaths){
+        /* From the uploadedListJson, group the photos located in the same directory */
+        QJsonArray arr;
+        /* Iterate the json array uploadedListJson, if the element's path == current folder path
+         * append to "arr" array */
+        for(int i = 0; i < uploadedListJson.count(); i++){
+//                qDebug() << uploadedListJson[i];
+//                qDebug() << !arr.contains(uploadedListJson[i]);
+//                qDebug() << path << "|" << info.dir().path();
+            /* prevent duplicate */
+            if(!arr.contains(uploadedListJson[i])){
+                QJsonObject jsonObj = uploadedListJson[i].toObject();
+                QFileInfo info (jsonObj["path"].toString());
+                if(path == info.dir().path())
+                    arr.append(jsonObj);
             }
-            else{
-                qDebug() << "failed to open save file" << endl;
-            }
-    }else{
-        qDebug() << "Uploaded list is empty" << endl;
+        }
+         /* "arr" should now contain elements in a specific folder, write to upload_log  */
+         if(!arr.isEmpty()){
+             /* open upload_log.txt */
+             QFile file (path + QString("/upload_log.txt"));
+             /* if successful, write to file */
+             if(file.open(QIODevice::WriteOnly)){
+                 QJsonDocument json_doc(arr);
+                 QString json_string = json_doc.toJson();
+                 file.write(json_string.toLocal8Bit());
+                 file.close();
+             }else
+                 qDebug() << "failed to open save file in" + path << endl;
+
+           }
+
     }
 }
 
@@ -877,4 +863,109 @@ void MainWindow::emailOut(){
         qDebug() << "No log file";
     }
 
+}
+
+void MainWindow::importLog(){
+    // Test Behavior: import a log and populate all queueTable and watchFolder ///
+    QString documentPath = QStandardPaths::locate(QStandardPaths::DocumentsLocation, QString(), QStandardPaths::LocateDirectory);
+    QString pathToLog =   documentPath + QString("PixylPushLog/upload_log.txt");
+    QFile file(pathToLog);
+    if(file.exists()){
+            file.open(QFile::ReadOnly);
+            QJsonDocument document = QJsonDocument().fromJson(file.readAll());
+            file.close();
+            uploadedListJson = document.array();
+            uploadedList = QStringList();
+            // Need to copy all the paths into uploadedList variable
+            for(int i = 0; i < uploadedListJson.count();i ++){
+                QJsonObject obj = uploadedListJson[i].toObject();
+                uploadedList.append(obj["path"].toString());
+            }
+//        qDebug() << uploadedListJson;
+//        qDebug() << uploadedList;
+
+          /* Keep track of which folder is added to watchTableView from the log, keep in mind
+           many entries will have the same folder, so we have to avoid duplicate entries */
+          QStringList addedFolderList;
+
+          // Now all those entries should be populated to the queue with status = Completed
+            for(int i = 0; i < uploadedListJson.count();i ++){
+                QJsonObject obj = uploadedListJson[i].toObject();
+                QFileInfo file(obj["path"].toString());
+
+                /* if the file exists (i.e it has not been moved since uploaded
+                 * then add to queue with status == completed */
+                /* else, set status == File missing as an indication*/
+                QString temp_status;
+                temp_status = (file.exists()) ? obj["status"].toString() : "File is missing";
+
+
+                /* Create the entry */
+                QList<QStandardItem *> queueRow({
+                    new QStandardItem(obj["name"].toString()),
+                    new QStandardItem(obj["album_name"].toString()),
+                    new QStandardItem(temp_status),
+                    new QStandardItem(obj["date_added"].toString()),
+                    new QStandardItem(file.lastModified().toString(timeFormat)),
+                    new QStandardItem(obj["path"].toString())
+                });
+
+                this->queueModel->appendRow(queueRow);
+                ui->queueTableView->resizeColumnsToContents();
+
+                /*********************************************/
+
+                /* If "folder_watch" of this photo == True,
+                 * populate the watchModel view, else do nothing
+                 * NOTE: doing this to distinguish queue item coming from folder
+                        and queue item added manually*/
+                if(obj["folder_watch"].toString() == "True"){
+                    QDir folder(file.dir().path());
+                    QFileInfo folderInfo(folder.path());
+                    int num_files = folder.entryInfoList(QStringList() << "*.jpg" << "*.JPG",QDir::Files).length();
+
+                    /* If folder path is not in watchTable, add it*/
+                    if(!addedFolderList.contains(folder.path())){
+                        addedFolderList.append(folder.path());
+                        /* Create the entry */
+                        QList<QStandardItem *> watchRow({
+                            new QStandardItem(folder.dirName()),
+                            new QStandardItem("Scanned"),
+                            new QStandardItem(QString::number(num_files)),
+                            new QStandardItem(obj["date_added"].toString()),
+                            new QStandardItem(folderInfo.lastModified().toString(timeFormat)),
+                            new QStandardItem(folder.path()),
+                        });
+
+                        this->watchModel->appendRow(watchRow);
+                        ui->watchTableView->resizeColumnsToContents();
+                    }// Otherwise, do nothing to prevent duplicate
+                }
+            }
+
+    }
+}
+
+void MainWindow::saveJsonList(){
+
+    /* if log file does not exist, create a new one. Otherwise, overwrite */
+    QString documentPath = QStandardPaths::locate(QStandardPaths::DocumentsLocation, QString(), QStandardPaths::LocateDirectory);
+    logPath =   documentPath + QString("PixylPushLog/upload_log_master.txt");
+    QFile jsonFile (logPath);
+    if(!uploadedListJson.isEmpty()){
+        if (jsonFile.open(QIODevice::WriteOnly)) {
+//                qDebug() << "Saving log";
+
+                QJsonDocument json_doc(uploadedListJson);
+                QString json_string = json_doc.toJson();
+
+                jsonFile.write(json_string.toLocal8Bit());
+                jsonFile.close();
+            }
+            else{
+                qDebug() << "failed to open save file" << endl;
+            }
+    }else{
+//        qDebug() << "Uploaded list is empty" << endl;
+    }
 }

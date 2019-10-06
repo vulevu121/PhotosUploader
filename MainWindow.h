@@ -81,7 +81,9 @@ public slots:
     void logInit();
     void importLog();
     void importFolderLog(QString const &folder_path);
+    void importLastScannedFolders();
     void saveLog();
+    void saveJsonList();
     void saveAlbumId(QString const &id);
 
 
@@ -111,7 +113,7 @@ private:
     QJsonObject jsonObj;
     QString logPath;
 
-
+    QString timeFormat = "MM/dd/yyyy hh:mm AP";
     QSettings *settings = new QSettings("Pixyl", "PixylPush");
 };
 

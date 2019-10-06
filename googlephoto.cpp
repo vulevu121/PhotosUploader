@@ -2,11 +2,6 @@
 
 GooglePhoto::GooglePhoto(QObject *parent) : QObject(parent)
 {
-//    auth = new GoogleOAuth2(this);
-//    auth->SetScope();        // default scope is google photo
-//    auth->Authenticate();
-//    connect(auth,SIGNAL(tokenReady(QString const)),this,SLOT(SetAccessToken(QString const)));
-//    connect(auth,SIGNAL(authenticateFailed(QString const)),this,SLOT(NotAuthenticated(QString const)));
 }
 
 void GooglePhoto::NotAuthenticated(QString const &message){
@@ -20,7 +15,6 @@ void GooglePhoto::SetTargetAlbumToUpload(QString const &id){
     }else{
         qDebug() << "Unable to download album info. Google photo is not authenticated";
     }
-//    connect(this,SIGNAL(authenticated()),this,SLOT(GetAlbumById()));
 
 }
 
@@ -56,6 +50,7 @@ void GooglePhoto::GetAlbumByIdReply(QNetworkReply * reply){
         albumName= jsonObj["title"].toString();
         manager->disconnect();
         albumReady = true;
+        emit albumIdConnected();
         emit showMessage("Album connected successfully");
      }
 
@@ -135,11 +130,6 @@ void GooglePhoto::UploadPicData(QString const &path){
         QFileInfo info(path);
         QFile file(path);
         fileName  = file.fileName();
-        qDebug() << "File exists:" << file.exists();
-
-//        qDebug() << path;
-//        qDebug() << fileName;
-//        qDebug() << info.fileName();
 
         file.open(QIODevice::ReadOnly);
         QByteArray fileBytes = file.readAll();
@@ -149,7 +139,7 @@ void GooglePhoto::UploadPicData(QString const &path){
         QNetworkRequest req (QUrl("https://photoslibrary.googleapis.com/v1/uploads"));
         req.setRawHeader("Authorization","Bearer "+ accessToken.toUtf8());
         req.setRawHeader("Content-Type","application/octet-stream");
-//        req.setRawHeader("X-Goog-Upload-File-Name",info.fileName().toLocal8Bit());
+        req.setRawHeader("X-Goog-Upload-File-Name",info.fileName().toLocal8Bit());
         req.setRawHeader("X-Goog-Upload-Protocol", "raw");
 
         manager->post(req, fileBytes);
@@ -203,9 +193,9 @@ void GooglePhoto::CreateMediaInAlbum(QString const &token){
 
     /* Add media to provided album if id is available */
     if (albumID.isEmpty()){
-        qDebug() << "album ID not available";
+//        qDebug() << "album ID not available";
       }else{
-        qDebug() << "album ID available";
+//        qDebug() << "album ID available";
         obj ["albumId"] = albumID;
 
     }
