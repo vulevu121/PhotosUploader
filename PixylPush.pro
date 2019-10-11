@@ -12,8 +12,10 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 TARGET = PixylPush
 TEMPLATE = app
 
-win32:VERSION = 1.1
-else:VERSION = 1.1
+VERSION = 0.54
+
+#win32:VERSION = 1.1
+#else:VERSION = 1.1
 
 RC_ICONS = camera.ico
 

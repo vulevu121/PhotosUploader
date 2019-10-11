@@ -12,7 +12,9 @@ int main(int argc, char *argv[])
     a.setOrganizationDomain("gopixyl.com");
     a.setApplicationName("PixylPush");
 
-
+    QSettings *settings = new QSettings("Pixyl", "PixylPush");
+    settings->setValue("exePath", a.applicationFilePath());
+    settings->setValue("version", a.applicationVersion());
 
     a.setStyle("Fusion");
 
