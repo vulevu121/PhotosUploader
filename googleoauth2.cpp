@@ -141,6 +141,7 @@ void GoogleOAuth2::ExchangeTokenReply(QNetworkReply *reply) {
     }
     /* Close Web view after log in */
     view->close();
+    qDebug() << view->page()->profile()->cookieStore();
 
 }
 /* Note that there are limits on the number of refresh tokens that will be issued;

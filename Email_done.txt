@@ -1,0 +1,7 @@
+[
+    {
+        "Email": "khuongnguyensac@gmail.com",
+        "PhotoPath": "screen.jpg",
+        "Status": "Sent"
+    }
+]

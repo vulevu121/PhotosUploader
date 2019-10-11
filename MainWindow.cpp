@@ -57,6 +57,17 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->actionLogIn,SIGNAL(triggered()),this,SLOT(googleLogIn()));
     connect(ui->actionLogOut,SIGNAL(triggered()),this,SLOT(googleLogOut()));
 
+    connect(ui->actionEmail, SIGNAL(triggered()), this, SLOT(showEmailTemplate()));
+    connect(ui->actionSMS, SIGNAL(triggered()), this, SLOT(showSMSTemplate()));
+
+    /* disable some options */
+    ui->actionPause->setEnabled(false);
+    ui->actionCreateAlbum->setEnabled(false);
+    ui->actionLogOut->setEnabled(false);
+
+    /* Start scan on start up option */
+    if(settings.value("startScanningStartup").toBool()) {resumeQueue();}
+
 
     /* Initialize the scan timers */
     queueTimerInit();
@@ -64,17 +75,9 @@ MainWindow::MainWindow(QWidget *parent) :
     saveTimerInit();
 //    emailInit();
 
-    /* Start scan on start up option */
-    if(settings.value("startScanningStartup").toBool())
-        resumeQueue();
 
-    /* disable some options */
-    ui->actionPause->setEnabled(false);
-    ui->actionCreateAlbum->setEnabled(false);
-    ui->actionLogOut->setEnabled(false);
 
-    connect(ui->actionEmail, SIGNAL(triggered()), this, SLOT(showEmailTemplate()));
-    connect(ui->actionSMS, SIGNAL(triggered()), this, SLOT(showSMSTemplate()));
+//    emailOut();
 
 }
 
@@ -548,12 +551,6 @@ void MainWindow::folderScan(){
      }
 }
 
-void MainWindow::emailInit(){
-    if(email != nullptr){
-        connect(email,SIGNAL(authenticated()),this,SLOT(emailOut()));
-    }
-
-}
 
 
 QString MainWindow::getAlbumIdFromFile(){
@@ -763,20 +760,6 @@ void MainWindow::saveLog(){
     }
 }
 
-void MainWindow::sendNow(QString const &to, QString const &subject, QString const &body){
-//    if(email == nullptr){
-//        email = new GMAIL();
-//    }
-     email->SetToEmail(to);
-     email->SetToEmail("7143529299@tmomail.net");
-     email->SetFromEmail("khuongnguyensac@gmail.com");
-     email->SetSubject(subject);
-     email->SetBody(body);
-//     email->SetAlbumURL(gphoto->GetAlbumURL());
-     email->SetAlbumURL("Testing");
-
-     connect(email,SIGNAL(authenticated()),email,SLOT(SendEmail()));
-}
 
 void MainWindow::showEmailTemplate() {
     EmailTemplateDialog *emailDialog = new EmailTemplateDialog(this);
@@ -795,74 +778,102 @@ MainWindow::~MainWindow()
 }
 
 
+void MainWindow::emailInit(){
+    if(email != nullptr){
+        connect(email,SIGNAL(authenticated()),this,SLOT(emailOut()));
+    }
+}
+
+void MainWindow::sendNow(QString const &to, QString const &subject, QString const &body){
+     email->SetToEmail(to);
+     email->SetToEmail("7143529299@tmomail.net");
+     email->SetFromEmail("khuongnguyensac@gmail.com");
+     email->SetSubject(subject);
+     email->SetBody(body);
+//     email->SetAlbumURL(gphoto->GetAlbumURL());
+     email->SetAlbumURL("Testing");
+     connect(email,SIGNAL(authenticated()),email,SLOT(SendEmail()));
+}
+
+
+//void MainWindow::emailOut(){
+////    qDebug() << "Opening upload log";
+//    email->SetFromEmail("info.enchanted.oc@gmail.com");
+//    /* Read the uploaded photo log file */
+//    QString path1("C:/Users/khuon/Documents/Github/PixylPush/upload_log.txt");
+//    QJsonArray arr1;
+//    QFile jsonFile1(path1);
+//    if(jsonFile1.exists()){
+//         jsonFile1.open(QFile::ReadOnly);
+//         QJsonDocument document1 = QJsonDocument().fromJson(jsonFile1.readAll());
+//         arr1 = document1.array();
+////         qDebug() << arr1;
+
+//         jsonFile1.close();
+//    }
+//    /* Read the list of item to send */
+//    QString path("C:/Users/khuon/Documents/Github/PixylPush/Email.txt");
+//    QJsonArray arr;
+//    QFile jsonFile(path);
+//    if(jsonFile.exists()){
+//        jsonFile.open(QFile::ReadOnly);
+//        QJsonDocument document = QJsonDocument().fromJson(jsonFile.readAll());
+//        arr = document.array();
+////        qDebug() << arr;
+
+//      /* For each item, find the photo url, send the email, and add the status */
+//      QJsonArray outArr;
+//      for(int i = 0; i < arr.count(); i++){
+//            QJsonObject jsonItem = arr[i].toObject();
+
+//            for(int j = 0; j < arr1.count(); j++){
+//                    QJsonObject jsonPhoto = arr1[i].toObject();
+//                    if(jsonPhoto["path"].toString() == jsonItem["PhotoPath"].toString()){
+//                        /* assume GMAIL object is already authenticated and ready */
+//                        email->SetAlbumURL(jsonPhoto["url"].toString());
+//                        email->SetToEmail(jsonItem["Email"].toString());
+//                        email->SendEmail();
+////                            qDebug() << email->GetToEmail() << email->GetAlbumURL();
+//                        break;
+//                    }
+//            }
+
+//            jsonItem.insert("Status", QJsonValue("Sent"));
+//            outArr.push_back(jsonItem);
+//        }
+////          qDebug() << outArr;
+//          jsonFile.close();
+
+//          QFile outFile("C:/Users/khuon/Documents/Github/PixylPush/EmailDone.txt");
+
+//          /* if log file does not exist, create a new one. Otherwise, overwrite */
+//          if (outFile.open(QIODevice::WriteOnly)) {
+//                  qDebug() << "Saving email done log";
+
+//                  QJsonDocument json_doc(outArr);
+//                  QString json_string = json_doc.toJson();
+
+//                  outFile.write(json_string.toLocal8Bit());
+//                  outFile.close();
+//              }
+//              else{
+//                  qDebug() << "failed to open save file" << endl;
+//              }
+//    }else{
+//        qDebug() << "No log file";
+//    }
+
+//}
+
 void MainWindow::emailOut(){
-//    qDebug() << "Opening upload log";
-    email->SetFromEmail("info.enchanted.oc@gmail.com");
-    /* Read the uploaded photo log file */
-    QString path1("C:/Users/khuon/Documents/Github/PixylPush/Upload_log.txt");
-    QJsonArray arr1;
-     QFile jsonFile1(path1);
-     if(jsonFile1.exists()){
-         jsonFile1.open(QFile::ReadOnly);
-         QJsonDocument document1 = QJsonDocument().fromJson(jsonFile1.readAll());
-         arr1 = document1.array();
-//         qDebug() << arr1;
-
-         jsonFile1.close();
+    QFile file("C:/Users/khuon/Documents/GitHub/PixylPush/content.txt");
+    QString content ("empty");
+    if( file.open(QFile::ReadOnly)){
+        content = file.readAll();
+        file.close();
     }
-   /* Read the list of item to send */
-   QString path("C:/Users/khuon/Documents/Github/PixylPush/Email.txt");
-    QJsonArray arr;
-    QFile jsonFile(path);
-    if(jsonFile.exists()){
-        jsonFile.open(QFile::ReadOnly);
-        QJsonDocument document = QJsonDocument().fromJson(jsonFile.readAll());
-        arr = document.array();
-//        qDebug() << arr;
-        /* For each item, find the photo url, send the email, and add the status */
-        QJsonArray outArr;
-          for(int i = 0; i < arr.count(); i++){
-                QJsonObject jsonItem = arr[i].toObject();
-
-                for(int j = 0; j < arr1.count(); j++){
-                        QJsonObject jsonPhoto = arr1[i].toObject();
-                        if(jsonPhoto["path"].toString() == jsonItem["PhotoPath"].toString()){
-                            /* assume GMAIL object is already authenticated and ready */
-                            email->SetAlbumURL(jsonPhoto["url"].toString());
-                            email->SetToEmail(jsonItem["Email"].toString());
-                            email->SendEmail();
-//                            qDebug() << email->GetToEmail() << email->GetAlbumURL();
-                            break;
-                        }
-                }
-
-                jsonItem.insert("Status", QJsonValue("Sent"));
-              outArr.push_back(jsonItem);
-            }
-//          qDebug() << outArr;
-
-
-          jsonFile.close();
-
-          QFile outFile("C:/Users/khuon/Documents/Github/PixylPush/EmailDone.txt");
-
-          /* if log file does not exist, create a new one. Otherwise, overwrite */
-          if (outFile.open(QIODevice::WriteOnly)) {
-                  qDebug() << "Saving email done log";
-
-                  QJsonDocument json_doc(outArr);
-                  QString json_string = json_doc.toJson();
-
-                  outFile.write(json_string.toLocal8Bit());
-                  outFile.close();
-              }
-              else{
-                  qDebug() << "failed to open save file" << endl;
-              }
-    }else{
-        qDebug() << "No log file";
-    }
-
+    Smtp* smtp = new Smtp("info.enchanted.oc@gmail.com", "takemetonewheights$2020", "smtp.gmail.com");
+    smtp->sendMail("info.enchanted.oc@gmail.com", "khuongnguyensac@gmail.com" , "test subject", content);
 }
 
 void MainWindow::importLog(){

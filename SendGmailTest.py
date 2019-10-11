@@ -58,13 +58,11 @@ with open('Email.txt') as f:
             print(photoPaths)
             imgTags = ['<img src="cid:image{}">'.format(i) for i, x in enumerate(photoPaths)]
 
-            for i, filePath in enumerate(photoPaths):
-                print(filePath)
-                with open(filePath, 'rb') as fp:
-                    msgImage = MIMEImage(fp.read())
-                    msgImage.add_header('Content-ID', '<image{}>'.format(i))
-                    msgRoot.attach(msgImage)
-                    print(filePath, "attached!")
+            with open(photoPaths, 'rb') as fp:
+                msgImage = MIMEImage(fp.read())
+                msgImage.add_header('Content-ID', '<image{}>'.format(0))
+                msgRoot.attach(msgImage)
+                print(photoPaths, "attached!")
                 # break
 
             # We reference the image in the IMG SRC attribute by the ID we give it below
@@ -72,22 +70,13 @@ with open('Email.txt') as f:
                 'Thank you for using the Enchanted Mirror!<br><br>{}<br><br>Check out our www.facebook.com/enchantedphotoboothoc/<br><br>Sincerely,<br>Enchanted Mirror Team'.format('<br>'.join(imgTags)),
                 'html')
             msgAlternative.attach(msgText)
-            print(msgRoot.as_string())
+            m = msgRoot.as_string()
+            print(m)
+            with open("content.txt",'w') as fp:
+                fp.write(msgRoot.as_string())
             s.sendmail(strFrom, strTo, msgRoot.as_string())
             print('Email sent!')
             # break
 
 
-# with open('DSC09933.JPG', 'rb') as fp:
-#     msgImage = MIMEImage(fp.read())
-#
-#     # Define the image's ID as referenced above
-#     msgImage.add_header('Content-ID', '<image1>')
-#     msgRoot.attach(msgImage)
-#
-#     # Send the email (this example assumes SMTP authentication is required)
-#
-#     s = smtplib.SMTP_SSL('smtp.gmail.com', 465)
-#     s.login('info.enchanted.oc@gmail.com', 'takemetonewheights$2020')
-#     s.sendmail(strFrom, strTo, msgRoot.as_string())
-#     s.quit()
+

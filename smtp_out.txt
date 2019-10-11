@@ -1,0 +1,48 @@
+stateChanged  QAbstractSocket::HostLookupState
+stateChanged  QAbstractSocket::ConnectingState
+stateChanged  QAbstractSocket::ConnectedState
+Connected 
+readyRead
+Server response code: "220"
+Server response:  "220 smtp.gmail.com ESMTP v3sm4131219pfn.18 - gsmtp\r\n"
+readyRead
+Server response code: "250"
+Server response:  "250-smtp.gmail.com at your service, [172.113.253.145]\r\n250-SIZE 35882577\r\n250-8BITMIME\r\n250-AUTH LOGIN PLAIN XOAUTH2 PLAIN-CLIENTTOKEN OAUTHBEARER XOAUTH\r\n250-ENHANCEDSTATUSCODES\r\n250-PIPELINING\r\n250-CHUNKING\r\n250 SMTPUTF8\r\n"
+qt.network.ssl: QSslSocket::startClientEncryption: cannot start handshake on non-plain connection
+"Unknown error"
+readyRead
+Server response code: "250"
+Server response:  "250-smtp.gmail.com at your service, [172.113.253.145]\r\n250-SIZE 35882577\r\n250-8BITMIME\r\n250-AUTH LOGIN PLAIN XOAUTH2 PLAIN-CLIENTTOKEN OAUTHBEARER XOAUTH\r\n250-ENHANCEDSTATUSCODES\r\n250-PIPELINING\r\n250-CHUNKING\r\n250 SMTPUTF8\r\n"
+Auth
+readyRead
+Server response code: "334"
+Server response:  "334 VXNlcm5hbWU6\r\n"
+Username
+readyRead
+Server response code: "334"
+Server response:  "334 UGFzc3dvcmQ6\r\n"
+Pass
+readyRead
+Server response code: "235"
+Server response:  "235 2.7.0 Accepted\r\n"
+MAIL FROM:< "info.enchanted.oc@gmail.com" >
+readyRead
+Server response code: "250"
+Server response:  "250 2.1.0 OK v3sm4131219pfn.18 - gsmtp\r\n"
+readyRead
+Server response code: "250"
+Server response:  "250 2.1.5 OK v3sm4131219pfn.18 - gsmtp\r\n"
+Sending content of the email
+readyRead
+Server response code: "354"
+Server response:  "354  Go ahead v3sm4131219pfn.18 - gsmtp\r\n"
+readyRead
+Server response code: "250"
+Server response:  "250 2.0.0 OK  1570687209 v3sm4131219pfn.18 - gsmtp\r\n"
+Quitting
+readyRead
+Server response code: "221"
+Server response:  "221 2.0.0 closing connection v3sm4131219pfn.18 - gsmtp\r\n"
+stateChanged  QAbstractSocket::UnconnectedState
+disconneted
+error  "Unknown error"

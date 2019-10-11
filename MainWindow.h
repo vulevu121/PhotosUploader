@@ -18,6 +18,7 @@
 #include "googlephoto.h"
 #include "gmail.h"
 #include "googleoauth2.h"
+#include "smtp.h"
 
 namespace Ui {
 class MainWindow;

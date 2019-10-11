@@ -39,7 +39,9 @@ SOURCES += \
         googleoauth2.cpp \
         googlephoto.cpp \
         main.cpp \
-        MainWindow.cpp
+        MainWindow.cpp \ \
+    smtpgmail.cpp
+
 
 HEADERS += \
         CreateAlbumDialog.h \
@@ -49,7 +51,9 @@ HEADERS += \
         SettingsDialog.h \
         gmail.h \
         googleoauth2.h \
-        googlephoto.h
+        googlephoto.h \ \
+    smtpgmail.h
+
 
 FORMS += \
         CreateAlbumDialog.ui \
@@ -68,4 +72,16 @@ RESOURCES += \
 
 DISTFILES += \
     Upload Log.json
+
+
+SMTP_LIBRARY_LOCATION = C:/build-SMTPEmail-Desktop_Qt_5_13_0_MSVC2017_64bit-Release
+
+win32:CONFIG(release, debug|release): LIBS += -L$$SMTP_LIBRARY_LOCATION/release/ -lSMTPEmail
+else:win32:CONFIG(debug, debug|release): LIBS += -L$$SMTP_LIBRARY_LOCATION/debug/ -lSMTPEmail
+else:unix: LIBS += -L$$SMTP_LIBRARY_LOCATION -lSMTPEmail
+
+INCLUDEPATH += $$SMTP_LIBRARY_LOCATION
+DEPENDPATH += $$SMTP_LIBRARY_LOCATION
+
+
 
