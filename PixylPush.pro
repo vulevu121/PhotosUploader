@@ -41,8 +41,7 @@ SOURCES += \
         googleoauth2.cpp \
         googlephoto.cpp \
         main.cpp \
-        MainWindow.cpp \ \
-    smtpgmail.cpp
+        MainWindow.cpp \
 
 
 HEADERS += \
@@ -53,8 +52,7 @@ HEADERS += \
         SettingsDialog.h \
         gmail.h \
         googleoauth2.h \
-        googlephoto.h \ \
-    smtpgmail.h
+        googlephoto.h \
 
 
 FORMS += \

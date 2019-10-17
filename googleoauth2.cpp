@@ -141,7 +141,7 @@ void GoogleOAuth2::ExchangeTokenReply(QNetworkReply *reply) {
     }
     /* Close Web view after log in */
     view->close();
-    qDebug() << view->page()->profile()->cookieStore();
+//    qDebug() << view->page()->profile()->cookieStore();
 
 }
 /* Note that there are limits on the number of refresh tokens that will be issued;
@@ -202,6 +202,11 @@ void GoogleOAuth2::deleteCookies(){
 
 bool GoogleOAuth2::isAuthenticated(){
    return !accessToken.isEmpty();
+}
+
+void GoogleOAuth2::quit(){
+    accessToken.clear();
+    emit unauthenticated();
 }
 
 GoogleOAuth2::~GoogleOAuth2(){

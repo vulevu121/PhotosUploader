@@ -150,18 +150,21 @@ void GooglePhoto::UploadPicData(QString const &path){
 void GooglePhoto::UploadReply(QNetworkReply *reply) {
     if(reply->error()) {
         qDebug() << "Upload Binary Data Error!";
-        qDebug() << reply->errorString();
+        QString err = reply->errorString();
         Uploading = false;
         manager->disconnect();
-
         emit mediaCreateFailed(fileName);
+
+        if (err == "Host accounts.google.com not found")
+            emit showMessage(err + QString(". Check WiFi connection"));
+        else
+            emit showMessage(err);
 
     } else {
         qDebug() << "Upload Binary Data Success!";
         uploadToken = QString(reply->readAll());
         manager->disconnect();
         emit uploadTokenReceived(uploadToken);
-
      }
 }
 
@@ -190,15 +193,8 @@ void GooglePhoto::CreateMediaInAlbum(QString const &token){
     arr.append(temp2);
     QJsonObject obj;
     obj ["newMediaItems"] = arr;
+    obj ["albumId"] = albumID;
 
-    /* Add media to provided album if id is available */
-    if (albumID.isEmpty()){
-//        qDebug() << "album ID not available";
-      }else{
-//        qDebug() << "album ID available";
-        obj ["albumId"] = albumID;
-
-    }
     QJsonDocument doc (obj);
     QByteArray jsonRequest = doc.toJson(QJsonDocument::Compact);
     QByteArray postDataSize = QByteArray::number(jsonRequest.size());
@@ -270,7 +266,7 @@ void GooglePhoto::CreateAlbumReply(QNetworkReply * reply){
 //        qDebug() << "Album link:" << albumURL;
         manager->disconnect();
         emit albumCreated();
-        emit albumIdChanged(albumID);
+        emit albumIdChanged(albumID,albumName);
         emit showMessage("Album created successfully");
      }
 }
@@ -293,7 +289,6 @@ void GooglePhoto::ShareAlbum(){
         {"sharedAlbumOptions", temp}
     };
     QJsonDocument doc (jsonObj);
-//    qDebug() << doc;
     QByteArray jsonRequest = doc.toJson(QJsonDocument::Compact);
     QByteArray postDataSize = QByteArray::number(jsonRequest.size());
     req.setRawHeader("Content-Length", postDataSize);
@@ -310,7 +305,6 @@ void GooglePhoto::ShareAlbumReply(QNetworkReply * reply){
         QJsonDocument jsonDoc = QJsonDocument::fromJson(reply->readAll());
         QJsonObject jsonObj = jsonDoc.object();
         albumURL =  jsonObj["shareInfo"].toObject()["shareableUrl"].toString();
-//        qDebug() << albumURL;
         albumReady = true;
         manager->disconnect();
         emit albumShared(albumURL);
@@ -336,7 +330,7 @@ void GooglePhoto::GetAlbumsReply(QNetworkReply * reply){
     } else {
         QJsonDocument jsonDoc = QJsonDocument::fromJson(reply->readAll());
         QJsonObject jsonObj = jsonDoc.object();
-        qDebug() << jsonObj;
+//        qDebug() << jsonObj;
      }
     manager->disconnect();
 }
@@ -363,70 +357,7 @@ QString GooglePhoto::GetUploadedPhotoURL(){
     return uploadedPhotoURL;
 }
 
-//void GooglePhoto::AppendUploadTokenList(QString token){
-//    uploadTokenList.append(token);
-//    qDebug() << "Upload Token List";
-//    foreach(QString t, uploadTokenList){
-//        qDebug() << t << endl;
-//    }
-//}
 
-
-//void GooglePhoto::CreateMultipleMediaInAlbum(){
-//    qDebug() << "Creating multiple medias in Album";
-//    if (manager == nullptr) {
-//        manager = new QNetworkAccessManager(this);
-//    }
-
-//    QUrl endpoint("https://photoslibrary.googleapis.com/v1/mediaItems:batchCreate");
-//    QNetworkRequest req(endpoint);
-//    req.setRawHeader("Content-Type","application/json");
-//    req.setRawHeader("Authorization","Bearer "+ accessToken.toUtf8());
-
-//    /* Json request */
-//    if(albumDescription.isEmpty()){
-//        albumDescription = QString("Description not available");
-//     }
-
-//    QJsonArray arr;
-//    foreach(QString t, uploadTokenList){
-//        QJsonObject tokenPart;
-//            tokenPart["uploadToken"] = uploadToken;
-
-
-//        QJsonObject item;
-//        item [ "description" ] = albumDescription;
-//        item ["simpleMediaItem"] = tokenPart;
-//        arr.append(item);
-//    }
-
-//    QJsonObject obj;
-//    obj ["newMediaItems"] = arr;
-
-//    /* Add media to provided album id if available */
-//    if (albumID.isEmpty()){
-//        qDebug() << "album ID not available";
-//      }else{
-//        qDebug() << "album ID available";
-//        obj ["albumId"] = albumID;
-
-//    }
-
-//    qDebug() << obj;
-
-    //to see the JSON output
-//    QJsonDocument doc (obj);
-
-
-//    QByteArray jsonRequest = doc.toJson(QJsonDocument::Compact);
-//    QByteArray postDataSize = QByteArray::number(jsonRequest.size());
-//    req.setRawHeader("Content-Length", postDataSize);
-
-//    manager->post(req,jsonRequest);
-
-//    connect(this->manager, SIGNAL(finished(QNetworkReply*)),
-//            this, SLOT(CreateMediaReply(QNetworkReply*)));
-//}
 GooglePhoto::~GooglePhoto(){
 
 }

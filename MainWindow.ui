@@ -23,6 +23,34 @@
   <widget class="QWidget" name="centralWidget">
    <layout class="QVBoxLayout" name="verticalLayout">
     <item>
+     <widget class="QToolButton" name="albumNameButton">
+      <property name="enabled">
+       <bool>false</bool>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">QToolButton {
+	border: 0;
+}</string>
+      </property>
+      <property name="text">
+       <string>AlbumName</string>
+      </property>
+      <property name="icon">
+       <iconset resource="graphics.qrc">
+        <normaloff>:/icon/photo_album</normaloff>:/icon/photo_album</iconset>
+      </property>
+      <property name="iconSize">
+       <size>
+        <width>24</width>
+        <height>24</height>
+       </size>
+      </property>
+      <property name="toolButtonStyle">
+       <enum>Qt::ToolButtonTextBesideIcon</enum>
+      </property>
+     </widget>
+    </item>
+    <item>
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
        <number>0</number>
@@ -226,6 +254,22 @@
       </widget>
      </widget>
     </item>
+    <item>
+     <widget class="QProgressBar" name="progressBar">
+      <property name="maximumSize">
+       <size>
+        <width>16777215</width>
+        <height>8</height>
+       </size>
+      </property>
+      <property name="value">
+       <number>24</number>
+      </property>
+      <property name="textVisible">
+       <bool>false</bool>
+      </property>
+     </widget>
+    </item>
    </layout>
   </widget>
   <widget class="QMenuBar" name="menuBar">
@@ -239,6 +283,9 @@
    </property>
   </widget>
   <widget class="QToolBar" name="mainToolBar">
+   <property name="enabled">
+    <bool>true</bool>
+   </property>
    <property name="movable">
     <bool>false</bool>
    </property>
@@ -247,6 +294,9 @@
      <width>24</width>
      <height>24</height>
     </size>
+   </property>
+   <property name="toolButtonStyle">
+    <enum>Qt::ToolButtonTextUnderIcon</enum>
    </property>
    <property name="floatable">
     <bool>false</bool>
@@ -258,7 +308,6 @@
     <bool>false</bool>
    </attribute>
    <addaction name="actionResume"/>
-   <addaction name="actionPause"/>
    <addaction name="actionStop"/>
    <addaction name="separator"/>
    <addaction name="actionCreateAlbum"/>
@@ -296,15 +345,6 @@
    </property>
    <property name="text">
     <string>Setting</string>
-   </property>
-  </action>
-  <action name="actionPause">
-   <property name="icon">
-    <iconset resource="graphics.qrc">
-     <normaloff>:/icon/pause</normaloff>:/icon/pause</iconset>
-   </property>
-   <property name="text">
-    <string>Pause</string>
    </property>
   </action>
   <action name="actionCreateAlbum">

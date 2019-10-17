@@ -62,9 +62,11 @@ public slots:
     void SetRawScope(QString const  &RawScope);  // use to set a scope different from the default options
     void deleteCookies();
     bool isAuthenticated();
+    void quit();
 
 signals:
     void authenticated(QString const &token);
+    void unauthenticated();
     void scopeSet();
     void authCodeReady();
     void authenticateFailed(QString const &msg);

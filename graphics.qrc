@@ -37,6 +37,8 @@
         <file alias="log_in">Images/1x/outline_account_box_white_48dp.png</file>
         <file alias="log_out">Images/1x/outline_exit_to_app_white_48dp.png</file>
         <file>Images/1x/outline_person_outline_white_48dp.png</file>
+        <file alias="close">Images/1x/close.png</file>
+        <file alias="check">Images/1x/check.png</file>
     </qresource>
     <qresource prefix="/">
         <file>camera.ico</file>

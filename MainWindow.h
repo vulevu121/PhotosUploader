@@ -11,6 +11,11 @@
 #include <QList>
 #include <QElapsedTimer>
 #include <QStandardPaths>
+#include <QBitmap>
+#include <QPixmap>
+#include <QIcon>
+#include <QColor>
+
 #include "SettingsDialog.h"
 #include "CreateAlbumDialog.h"
 #include "EmailTemplateDialog.h"
@@ -18,7 +23,7 @@
 #include "googlephoto.h"
 #include "gmail.h"
 #include "googleoauth2.h"
-#include "smtp.h"
+#include "C:/SmtpClient-for-Qt-1.1/src/SmtpMime"
 
 namespace Ui {
 class MainWindow;
@@ -41,7 +46,8 @@ private slots:
     void addFolder();
     void removeFolders();
     void clearWatchlist();
-    void createAlbum(QString const &name, QString const &desc, QString const &albumId, bool newExistingAlbum);
+    void createAlbum(QString const &name, QString const &desc);
+    void linkExistingAlbum(QString const &id);
 
     void showCreateAlbumDialog();
     void queueUpload();
@@ -53,11 +59,10 @@ private slots:
     void folderTimerInit();
     void folderTimerStart();
     void folderTimerStop();
-
     void saveTimerInit();
 
     void updateUploadedList(QString const &filename);
-    void sendNow(QString const &to, QString const &subject, QString const &body);
+    void sendGmail(QString const &to, QString const &subject, QString const &body);
     void updateFailedList(QString const &filename);
 
     void syncSettings();
@@ -68,25 +73,31 @@ private slots:
     void stopQueue();
 
     void resetFailItems();
-    void emailOut();
-    void emailInit();
+    void sendSMTP(QString const &FROM, QString const &TO);
 
     void googleLogIn();
     void googleLogOut();
 
     void deleteAllObjects();
 
-    QString getAlbumIdFromFile();
+    void disableCreateAlbumBtn();
+    void enableCreateAlbumBtn(QString const &blank ="");
+    void disableLogInBtn();
+    void enableLogInBtn(QString const &blank = "");
+    void disableLogOutBtn();
+    void enableLogOutBtn(QString const &blank = "");
 
 public slots:
-    void logInit();
-    void importLog();
-    void importFolderLog(QString const &folder_path);
+    void importMastertLog();
+    void searchFolderLog(QString const &folder_path);
     void importLastScannedFolders();
-    void saveLog();
-    void saveJsonList();
-    void saveAlbumId(QString const &id);
+    void saveProgress();
+    void saveMasterLog();
+    void saveUsedAlbum(QString const &id, QString const &name);
+    QIcon colorIcon(const QString &path, const QColor &color);
+    QString loadUsedAlbum(QString const &key);
 
+    void importEmailQueue();
 
 private:
     Ui::MainWindow *ui;
@@ -112,8 +123,10 @@ private:
     QMap<QString,int> uploadFailedList;
     bool isReady = true;
     QJsonObject jsonObj;
-    QString logPath;
 
+
+    QColor grey = QColor("grey");
+    QColor white = QColor("white");
     QString timeFormat = "MM/dd/yyyy hh:mm AP";
     QSettings *settings = new QSettings("Pixyl", "PixylPush");
 };

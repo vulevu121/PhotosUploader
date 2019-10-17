@@ -61,12 +61,12 @@
       <item>
        <widget class="QLabel" name="label_3">
         <property name="text">
-         <string>Album ID:</string>
+         <string>Album Name:</string>
         </property>
        </widget>
       </item>
       <item>
-       <widget class="QLineEdit" name="existingAlbumIdEdit">
+       <widget class="QLineEdit" name="existingAlbumNameEdit">
         <property name="enabled">
          <bool>true</bool>
         </property>

@@ -1,7 +1,7 @@
 [
     {
         "Email": "khuongnguyensac@gmail.com",
-        "PhotoPath": "screen.jpg",
+        "PhotoPath": "lock.jpg,screen.jpg",
         "Status": "Sent"
     }
 ]

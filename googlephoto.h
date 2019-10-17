@@ -42,7 +42,7 @@ signals:
     void uploadTokenReceived(QString const &token);
     void albumCreated();
     void albumShared(QString const &url);
-    void albumIdChanged(QString const &id);
+    void albumIdChanged(QString const &id, QString const &name);
     void mediaCreated(QString const &filename);
     void mediaCreateFailed(QString const &filename);
     void pathToFileChanged(QString const &newPath);
@@ -60,7 +60,6 @@ private slots:
     void CreateMediaReply(QNetworkReply *reply);
     void GetAlbums();
     void GetAlbumsReply(QNetworkReply * reply);
-//    void AppendUploadTokenList(QString);
     void GetAlbumById();
     void GetAlbumByIdReply(QNetworkReply * reply);
     void NotAuthenticated(QString const &message);

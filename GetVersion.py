@@ -5,7 +5,7 @@ lineCount = 0
 
 for dirPath, dirNames, fileNames in os.walk('.'):
     for f in fileNames:
-        m = re.search('\.cpp|\.h|\.qml', f)
+        m = re.search('\.cpp|\.h|\.qml|\.ui', f)
         if m:
             filePath = '{}/{}'.format(dirPath, f)
             with open(filePath) as f:
