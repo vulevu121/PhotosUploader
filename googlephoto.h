@@ -47,7 +47,7 @@ signals:
     void mediaCreateFailed(QString const &filename);
     void pathToFileChanged(QString const &newPath);
     void showMessage(QString const &msg);
-    void albumIdConnected();
+    void albumIdConnected(QString const &id, QString const &name);
 
 private slots:
     void SetAccessToken(QString const &token);

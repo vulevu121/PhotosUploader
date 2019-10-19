@@ -14,7 +14,6 @@ MainWindow::MainWindow(QWidget *parent) :
 
     settings.sync();
     connect(settingsDialog, SIGNAL(settingsSaved()), this, SLOT(syncSettings()));
-//    connect(this, SIGNAL(destroyed(QObject *)), this, SLOT(saveProgress(QObject *)));
 
     queueHeader = QStringList({
         "Filename",
@@ -60,6 +59,7 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->actionEmail, SIGNAL(triggered()), this, SLOT(showEmailTemplate()));
     connect(ui->actionSMS, SIGNAL(triggered()), this, SLOT(showSMSTemplate()));
 
+
     /* disable some options */
     disableLogOutBtn();
     disableCreateAlbumBtn();
@@ -74,8 +74,6 @@ MainWindow::MainWindow(QWidget *parent) :
     folderTimerInit();
     saveTimerInit();
 
-
-    importEmailQueue();
 }
 
 void MainWindow::disableCreateAlbumBtn(){
@@ -108,6 +106,10 @@ void MainWindow::enableLogOutBtn(QString const &blank){
     ui->actionLogOut->setIcon(colorIcon(":/icon/photo_album", white));
 }
 
+void MainWindow::displayAlbumName(QString const &id, QString const &name){
+    qDebug() << name << id;
+    ui->albumNameButton->setText(name);
+}
 
 /************************** Log In / Log Out **************************/
 void MainWindow::googleLogIn(){
@@ -503,6 +505,11 @@ void MainWindow::showCreateAlbumDialog() {
         dialog->show();
         connect(dialog,SIGNAL(createAlbumSignal(QString const, QString const)), this, SLOT(createAlbum(QString const, QString const)));
         connect(dialog,SIGNAL(existingAlbumSignal(QString const &)),this,SLOT(linkExistingAlbum(QString const &)));
+
+        /* display album name on the Main  Window once it is created */
+        connect(gphoto,SIGNAL(albumIdConnected(QString const, QString const)),this,SLOT(displayAlbumName(QString const, QString const)));
+        connect(gphoto,SIGNAL(albumIdChanged(QString const, QString const)),this,SLOT(displayAlbumName(QString const, QString const)));
+
     }else
         ui->statusBar->showMessage("Please log in before trying to create album");
 }
@@ -874,54 +881,177 @@ void MainWindow::saveMasterLog(){
 
 /************************** Email **************************************/
 void MainWindow::showEmailTemplate() {
-    EmailTemplateDialog *emailDialog = new EmailTemplateDialog(this);
+    if(emailDialog == nullptr)
+        emailDialog = new EmailTemplateDialog(this);
     emailDialog->show();
-    connect(emailDialog,SIGNAL(sendEmailSignal(QString const,QString const , QString const)),this,SLOT(sendGmail(QString const,QString const , QString const)));
+
+    /* Read the email.txt file */
+    QFileDialog *fileDialog = new QFileDialog(this);
+    QString emailPath = fileDialog->getOpenFileName(this, tr("Select Email file"), "", tr("Texts (*.txt)"));
+
+    /* Connect file watcher */
+    emailWatcher = new QFileSystemWatcher (QStringList(emailPath));
+    connect(emailWatcher,SIGNAL(fileChanged(const QString &)),this,SLOT(importEmailQueue(const QString &)));
+
+    /* Connect send email for testing only*/
+//    connect(emailDialog,SIGNAL(emailTemplateSignal(const QString &)),this,SLOT(importEmailQueue(const QString &)));
 }
 
-void MainWindow::sendSMTP(QString const &FROM, QString const &TO){
-//OPTION 1:
+void MainWindow::importEmailQueue(const QString &emailPath){
+    if(emailDialog == nullptr){
+        showEmailTemplate();
+        return;
+    }
+
+//  QString  emailPath = "C:/Users/khuon/Documents/GitHub/PixylPush/Email.txt";
+    qDebug() << emailPath;
+
+    QJsonArray outArr;
+    QJsonArray arr;
+    QFile emailFile(emailPath);
+    if(emailFile.exists()){
+         emailFile.open(QFile::ReadOnly);
+         QJsonDocument document = QJsonDocument().fromJson(emailFile.readAll());
+         arr = document.array();
+         emailFile.close();
+
+    /* For each item, find the photo url, send the email, and add the status */
+    for(int i = 0; i < arr.count(); i++){
+        QJsonObject jsonItem = arr[i].toObject();
+        QString status = jsonItem["Status"].toString();
+        QStringList paths = jsonItem["PhotoPath"].toString().split(",");
+        QString receiver = jsonItem["Email"].toString();
+//        qDebug() << paths;
+
+        /* Must check status of each entry, if status = Queue, then process, else ignore */
+        if(status == "Queue"){
+            if(paths.count() > 0){
+//                qDebug() << emailDialog->getTo() << emailDialog->getSubject() << emailDialog->getBody();
+                // send SMTP with receiver and path
+                sendSMTP(emailDialog->getTo(),
+                         receiver,
+                         emailDialog->getSubject(),
+                         emailDialog->getBody(),
+                         paths);
+                jsonItem["Status"] = "Sent";
+                outArr.push_back(jsonItem);
+            }
+         }else{
+                if(status == "Sent")
+                    continue;
+              }
+        }
+    }
+    /* Save complettion to a text file */
+//    QFile outFile("C:/Users/khuon/Documents/Github/PixylPush/EmailDone.txt");
+    QFileInfo info (emailPath);
+    QDir dir (info.dir());
+    QFile outFile (dir.path() + "/EmailDone.txt");
+//    QFile outFile( emailPath + "/EmailDone.txt"); // NOTE: EmailPath is the path to the txt file, not just the directory
+
+    if (outFile.open(QIODevice::WriteOnly)) {
+      QJsonDocument json_doc(outArr);
+      QString json_string = json_doc.toJson();
+
+      outFile.write(json_string.toLocal8Bit());
+      outFile.close();
+    }
+
+}
+
+void MainWindow::sendSMTP(QString const &sender,
+                          QString const &receiver,
+                          QString const &sub,
+                          QString const &body,
+                          QStringList const &paths){
+
     // First create the SmtpClient object and set the user and the password.
     SmtpClient smtp("smtp.gmail.com", 465, SmtpClient::SslConnection);
-    smtp.setUser("khuongnguyensac@gmail.com");
-    smtp.setPassword("B0gi0i17");
+
+    smtp.setUser("info.enchanted.oc@gmail.com");
+    smtp.setPassword("takemetonewheights$2020");
 
     // Create a MimeMessage
     MimeMessage message;
-    EmailAddress sender("khuongnguyensac@gmail.com", "Blah");
-    message.setSender(&sender);
+    EmailAddress from("info.enchanted.oc@gmail.com", sender);
+    message.setSender(&from);
 
 //    EmailAddress to("khuong.dinh.ng@gmail.com", "You");
-    EmailAddress to("7143529299@tmomail.net", "whatever");
+
+    EmailAddress to(receiver);
 
     message.addRecipient(&to);
 
-    message.setSubject("SmtpClient for Qt - Example 3 - Html email with images");
+    message.setSubject(sub);
+
+
 
     // Now we need to create a MimeHtml object for HTML content
+/* Working */
     MimeHtml html;
+    QString img_tag;
 
-    html.setHtml("<h1> Hello! </h1>"
-                 "<h2> This is the first image </h2>"
-                 "<img src='cid:btn' />"
-                 "<h2> This is the second image </h2>"
-                 "<img src='cid:me' />");
+    foreach(QString path, paths){
+        QFileInfo pic(path);
+        img_tag.append(QString("<img src='cid:%1'/>").arg(pic.fileName()));
+    }
 
-
-    // Create a MimeInlineFile object for each image
-    MimeInlineFile image1 (new QFile("C:/SmtpClient-for-Qt-1.1/demos/demo4/btn.jpg"));
-
-    // An unique content id must be setted
-    image1.setContentId("btn");
-    image1.setContentType("image/jpg");
-
-    MimeInlineFile image2 (new QFile("C:/SmtpClient-for-Qt-1.1/demos/demo4/me.jpg"));
-    image2.setContentId("me");
-    image2.setContentType("image/jpg");
-
+    html.setHtml(body + img_tag);
     message.addPart(&html);
-    message.addPart(&image1);
-    message.addPart(&image2);
+
+    QFileInfo pic(paths[0]);
+    MimeInlineFile image (new QFile(pic.filePath()));
+    image.setContentId(pic.fileName());
+    image.setContentType("image/jpg");
+    message.addPart(&image);
+
+/* Not working */
+//    for(int i = 0; i < paths.count();i++){
+//        QFileInfo pic(paths[i]);
+//        MimeInlineFile image (new QFile(pic.filePath()));
+//        image.setContentId(pic.fileName());
+//        image.setContentType("image/jpg");
+//        message.addPart(&image);
+//    }
+/* END */
+
+
+//     Create a MimeInlineFile object for each image
+//    MimeInlineFile image1 (new QFile("C:/SmtpClient-for-Qt-1.1/demos/demo4/btn.jpg"));
+//    MimeInlineFile image2 (new QFile("C:/SmtpClient-for-Qt-1.1/demos/demo4/me.jpg"));
+//    MimeInlineFile image3 (new QFile("C:/SmtpClient-for-Qt-1.1/demos/demo4/screen.jpg"));
+
+//    QFileInfo pic1(paths[0]);
+//    MimeInlineFile image1 (new QFile(pic1.filePath()));
+
+//    // An unique content id must be setted
+//    image1.setContentId(pic1.fileName());
+//    image1.setContentType("image/jpg");
+
+//    QFileInfo pic2(paths[1]);
+//    MimeInlineFile image2 (new QFile(pic2.filePath()));
+
+//    image2.setContentId(pic2.fileName());
+//    image2.setContentType("image/jpg");
+
+
+//    QFileInfo pic3(paths[2]);
+//    MimeInlineFile image3 (new QFile (pic3.filePath()));
+//    image3.setContentId(pic3.fileName());
+//    image3.setContentType("image/jpg");
+
+
+
+//    MimeHtml html;
+
+//    html.setHtml(body + QString("<img src='cid:%1' />"
+//                                 "<img src='cid:%2' />"
+//                                 "<img src='cid:%3' />").arg(pic1.fileName()).arg(pic2.fileName()).arg(pic3.fileName()));
+
+//    message.addPart(&html);
+//    message.addPart(&image1);
+//    message.addPart(&image2);
+//    message.addPart(&image3);
 
     // Now the email can be sended
     if (!smtp.connectToHost())
@@ -938,65 +1068,6 @@ void MainWindow::sendSMTP(QString const &FROM, QString const &TO){
     smtp.quit();
 }
 
-void MainWindow::importEmailQueue(){
-    /* Read the email.txt file */
-//    QFileDialog *fileDialog = new QFileDialog(this);
-//    QString filePath = fileDialog->getOpenFileName(this, tr("Select folder"), "", tr("Texts (*.txt)"));
-
-    QString filePath = "C:/Users/khuon/Documents/GitHub/PixylPush/Email.txt";
-
-    QJsonArray outArr;
-    QJsonArray arr;
-    QFile emailFile(filePath);
-    if(emailFile.exists()){
-         emailFile.open(QFile::ReadOnly);
-         QJsonDocument document = QJsonDocument().fromJson(emailFile.readAll());
-         arr = document.array();
-         emailFile.close();
-
-
-
-      /* For each item, find the photo url, send the email, and add the status */
-      for(int i = 0; i < arr.count(); i++){
-            QJsonObject jsonItem = arr[i].toObject();
-            QStringList paths = jsonItem["PhotoPath"].toString().split(",");
-            QString receiver = jsonItem["Email"].toString();
-//            qDebug() << paths;
-
-            foreach(QString path, paths){
-                qDebug() << path;
-                // send SMTP with receiver and path
-            }
-
-            jsonItem.insert("Status", QJsonValue("Sent"));
-            outArr.push_back(jsonItem);
-        }
-     }
-
-          QFile outFile("C:/Users/khuon/Documents/Github/PixylPush/EmailDone.txt");
-
-          /* if log file does not exist, create a new one. Otherwise, overwrite */
-          if (outFile.open(QIODevice::WriteOnly)) {
-                  qDebug() << "Saving email done log";
-
-                  QJsonDocument json_doc(outArr);
-                  QString json_string = json_doc.toJson();
-
-                  outFile.write(json_string.toLocal8Bit());
-                  outFile.close();
-              }
-              else
-                  qDebug() << "failed to open save file" << endl;
-}
-
-void MainWindow::sendGmail(QString const &to, QString const &subject, QString const &body){
-     email->SetToEmail(to);
-     email->SetToEmail("7143529299@tmomail.net");
-     email->SetFromEmail("khuongnguyensac@gmail.com");
-     email->SetSubject(subject);
-     email->SetBody(body);
-     email->SetAlbumURL(gphoto->GetAlbumURL());
-}
 
 /************************** END **************************************/
 

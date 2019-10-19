@@ -14,8 +14,8 @@ void GoogleOAuth2::SetScope(QString const  &RequestScope){
         qDebug() << "Scope for Gmail";
         scope = QString("?scope=https://www.googleapis.com/auth/gmail.send");
     }else{
-        qDebug() << "Scope for Google Photo and Gmail";
-        scope = QString("?scope=https://www.googleapis.com/auth/photoslibrary.sharing https://www.googleapis.com/auth/photoslibrary https://www.googleapis.com/auth/gmail.send"); // scope for sharing
+        qDebug() << "Scope for Google Photo";
+        scope = QString("?scope=https://www.googleapis.com/auth/photoslibrary.sharing https://www.googleapis.com/auth/photoslibrary "); // scope for sharing
     }
     emit scopeSet();
 }

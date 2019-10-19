@@ -15,6 +15,7 @@
 #include <QPixmap>
 #include <QIcon>
 #include <QColor>
+#include <QFileSystemWatcher>
 
 #include "SettingsDialog.h"
 #include "CreateAlbumDialog.h"
@@ -62,7 +63,6 @@ private slots:
     void saveTimerInit();
 
     void updateUploadedList(QString const &filename);
-    void sendGmail(QString const &to, QString const &subject, QString const &body);
     void updateFailedList(QString const &filename);
 
     void syncSettings();
@@ -73,7 +73,14 @@ private slots:
     void stopQueue();
 
     void resetFailItems();
-    void sendSMTP(QString const &FROM, QString const &TO);
+//    void sendSMTP(QString const &sender, QString const &receiver, QString const &sub, QString const &body,
+//                  QString const &path1, QString const &path2,QString const &path3);
+
+    void sendSMTP(QString const &sender,
+                  QString const &receiver,
+                  QString const &sub,
+                  QString const &body,
+                  QStringList const &paths);
 
     void googleLogIn();
     void googleLogOut();
@@ -86,6 +93,8 @@ private slots:
     void enableLogInBtn(QString const &blank = "");
     void disableLogOutBtn();
     void enableLogOutBtn(QString const &blank = "");
+    void displayAlbumName(QString const &id, QString const &name);
+
 
 public slots:
     void importMastertLog();
@@ -97,7 +106,7 @@ public slots:
     QIcon colorIcon(const QString &path, const QColor &color);
     QString loadUsedAlbum(QString const &key);
 
-    void importEmailQueue();
+    void importEmailQueue(const QString &emailPath);
 
 private:
     Ui::MainWindow *ui;
@@ -115,7 +124,7 @@ private:
 
     QTimer * queueTimer = nullptr;
     QTimer * folderTimer = nullptr;
-    QTimer *  saveTimer = nullptr ;
+    QTimer * saveTimer = nullptr ;
     QTimer elapsedTime;
 
     QStringList uploadedList;
@@ -124,6 +133,10 @@ private:
     bool isReady = true;
     QJsonObject jsonObj;
 
+    EmailTemplateDialog *emailDialog = nullptr;
+//    QString emailPath;
+
+    QFileSystemWatcher * emailWatcher = nullptr;
 
     QColor grey = QColor("grey");
     QColor white = QColor("white");

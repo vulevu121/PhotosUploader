@@ -50,7 +50,7 @@ void GooglePhoto::GetAlbumByIdReply(QNetworkReply * reply){
         albumName= jsonObj["title"].toString();
         manager->disconnect();
         albumReady = true;
-        emit albumIdConnected();
+        emit albumIdConnected(albumID,albumName);
         emit showMessage("Album connected successfully");
      }
 
@@ -261,7 +261,7 @@ void GooglePhoto::CreateAlbumReply(QNetworkReply * reply){
         QJsonDocument jsonDoc = QJsonDocument::fromJson(reply->readAll());
         QJsonObject jsonObj = jsonDoc.object();
         albumID = jsonObj["id"].toString();
-        qDebug() << "Album created! ID:" << albumID;
+//        qDebug() << "Album created! ID:" << albumID;
         albumURL = jsonObj["productUrl"].toString();
 //        qDebug() << "Album link:" << albumURL;
         manager->disconnect();
