@@ -946,15 +946,16 @@ void MainWindow::importEmailQueue(const QString &emailPath){
 //    QFile outFile("C:/Users/khuon/Documents/Github/PixylPush/EmailDone.txt");
     QFileInfo info (emailPath);
     QDir dir (info.dir());
-    QFile outFile (dir.path() + "/EmailDone.txt");
+//    QFile outFile (dir.path() + "/EmailDone.txt");
 //    QFile outFile( emailPath + "/EmailDone.txt"); // NOTE: EmailPath is the path to the txt file, not just the directory
 
-    if (outFile.open(QIODevice::WriteOnly)) {
+//    if (outFile.open(QIODevice::WriteOnly)) {
+      if(emailFile.open(QFile::WriteOnly)){
       QJsonDocument json_doc(outArr);
       QString json_string = json_doc.toJson();
 
-      outFile.write(json_string.toLocal8Bit());
-      outFile.close();
+      emailFile.write(json_string.toLocal8Bit());
+      emailFile.close();
     }
 
 }
