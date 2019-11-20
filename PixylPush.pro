@@ -37,6 +37,7 @@ SOURCES += \
         EmailTemplateDialog.cpp \
         SMSTemplateDialog.cpp \
         SettingsDialog.cpp \
+    filedownloader.cpp \
         gmail.cpp \
         googleoauth2.cpp \
         googlephoto.cpp \
@@ -50,6 +51,7 @@ HEADERS += \
         MainWindow.h \
         SMSTemplateDialog.h \
         SettingsDialog.h \
+    filedownloader.h \
         gmail.h \
         googleoauth2.h \
         googlephoto.h \

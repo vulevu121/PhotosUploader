@@ -107,7 +107,6 @@ void MainWindow::enableLogOutBtn(QString const &blank){
 }
 
 void MainWindow::displayAlbumName(QString const &id, QString const &name){
-    qDebug() << name << id;
     ui->albumNameButton->setText(name);
 }
 
@@ -544,6 +543,7 @@ void MainWindow::createAlbum(QString const &name, QString const &desc) {
         gphoto->SetAlbumDescription(desc);
         gphoto->CreateAlbum();
         connect(gphoto,SIGNAL(albumCreated()),gphoto,SLOT(ShareAlbum()));
+        connect(gphoto,SIGNAL(albumShared(QString const &)),this,SLOT(downloadQR(QString const &)));
         connect(gphoto,SIGNAL(albumIdChanged(QString const &,QString const &)),this,SLOT(saveUsedAlbum(QString const &, QString const &)));
 
         /* Delete LastScannedFolders data from settings */
@@ -561,6 +561,10 @@ void MainWindow::createAlbum(QString const &name, QString const &desc) {
 void MainWindow::linkExistingAlbum(QString const &id){
     if (gphoto->isAuthenticated()){
         gphoto->SetTargetAlbumToUpload(id);
+
+        /* re-download QR */
+        connect(gphoto,SIGNAL(existingUrlReady(QString const &)),this,SLOT(downloadQR(QString const &)));
+
 
         /* import last sannced folder from registry */
         connect(gphoto,SIGNAL(albumIdConnected(QString const,QString const)),this,SLOT(importLastScannedFolders()));
@@ -1336,7 +1340,24 @@ void MainWindow::sendSMTPsms( QString const &receiver,
 
     smtp.quit();
 }
+/************************** END **************************************/
 
+/************************** Album QR **************************************/
+void MainWindow::downloadQR(QString const &url)
+{
+    QUrl imageUrl("https://api.qrserver.com/v1/create-qr-code/?margin=5&size=150x150&data=" + url);
+    m_pImgCtrl = new FileDownloader(imageUrl, this);
+    connect(m_pImgCtrl, SIGNAL (downloaded()), this, SLOT (saveQR()));
+}
+
+void MainWindow::saveQR(){
+    qDebug() << "save QR";
+    QFile file("C:/Users/khuon/Documents/GitHub/PixylPush/albumQR.png");
+    if(file.open(QIODevice::WriteOnly)){
+        file.write(m_pImgCtrl->downloadedData());
+        file.close();
+    }
+}
 /************************** END **************************************/
 
 

@@ -48,6 +48,7 @@ signals:
     void pathToFileChanged(QString const &newPath);
     void showMessage(QString const &msg);
     void albumIdConnected(QString const &id, QString const &name);
+    void existingUrlReady(QString const &url);
 
 private slots:
     void SetAccessToken(QString const &token);

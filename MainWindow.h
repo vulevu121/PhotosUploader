@@ -25,6 +25,7 @@
 #include "googlephoto.h"
 #include "gmail.h"
 #include "googleoauth2.h"
+#include "filedownloader.h"
 #include "C:/SmtpClient-for-Qt-1.1/src/SmtpMime"
 
 namespace Ui {
@@ -75,8 +76,6 @@ private slots:
     void stopQueue();
 
     void resetFailItems();
-
-
     void sendSMTP(QString const &sender,
                   QString const &receiver,
                   QString const &sub,
@@ -101,6 +100,8 @@ private slots:
     void enableLogOutBtn(QString const &blank = "");
     void displayAlbumName(QString const &id, QString const &name);
 
+    void downloadQR(QString const &url="www.google.com");
+    void saveQR();
 
 public slots:
     void importMastertLog();
@@ -146,6 +147,8 @@ private:
     QFileSystemWatcher * emailWatcher = nullptr;
     QFileSystemWatcher * smsWatcher = nullptr;
     QMap<QString,QString> carrier_map;
+    FileDownloader *m_pImgCtrl = nullptr;
+
 
     QColor grey = QColor("grey");
     QColor white = QColor("white");

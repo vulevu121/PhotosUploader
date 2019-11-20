@@ -50,6 +50,7 @@ void GooglePhoto::GetAlbumByIdReply(QNetworkReply * reply){
         albumName= jsonObj["title"].toString();
         manager->disconnect();
         albumReady = true;
+        emit existingUrlReady(albumURL);
         emit albumIdConnected(albumID,albumName);
         emit showMessage("Album connected successfully");
      }
