@@ -1,0 +1,1 @@
+[{"Email":"khuong.dinh.ng@gmail.com","PhotoPaths":[{"path":"C:/Users/khuon/Documents/GitHub/PixylPush/screen.jpg"},{"path":"C:/Users/khuon/Documents/GitHub/PixylPush/lock.jpg"}],"Status": "Queue"}]

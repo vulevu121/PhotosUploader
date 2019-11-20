@@ -24,6 +24,7 @@ public slots:
     QString getTo();
     QString getSubject();
     QString getBody();
+    QString getFrom();
 
 private:
     Ui::EmailTemplateDialog *ui;
@@ -34,7 +35,6 @@ private slots:
 
 
 signals:
-//    void emailTemplateSignal(QString const &to, QString const &subject, QString const &body);
     void emailTemplateSignal(const QString &sig = "NA");
 
 };

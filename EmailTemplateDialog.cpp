@@ -14,6 +14,7 @@ void EmailTemplateDialog::emitTemplateSignal(){
     to = ui->toEdit->text();
     subject = ui->subjectEdit->text();
     body = ui->bodyEdit->toPlainText();
+    from = ui->fromEdit->text();
 //    qDebug() << body;
     emit emailTemplateSignal();
 }
@@ -22,6 +23,9 @@ QString EmailTemplateDialog::getTo(){
     return to;
 }
 
+QString EmailTemplateDialog::getFrom(){
+    return from;
+}
 QString EmailTemplateDialog::getSubject(){
     return subject;
 

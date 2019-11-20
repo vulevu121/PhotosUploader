@@ -46,7 +46,7 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->clearQueueButton, SIGNAL(clicked()), this, SLOT(clearQueue()));
 
     connect(ui->actionSetting, SIGNAL(triggered()), this->settingsDialog, SLOT(show()));
-    connect(ui->addFolderButton, SIGNAL(clicked()), this, SLOT(addFolder()));
+    connect(ui->addFolderButton, SIGNAL(clicked()), this, SLOT(addFolders()));
     connect(ui->removeFolderButton, SIGNAL(clicked()), this, SLOT(removeFolders()));
     connect(ui->clearWatchlistButton, SIGNAL(clicked()), this, SLOT(clearWatchlist()));
 
@@ -319,6 +319,9 @@ void MainWindow::queueUpload(){
 //     qDebug() << "Checking upload queue...";
      /* Iterate through the rows in the model, if status is Queue, upload photo,
       * If status is Completed, pass*/
+     QTime t;
+     t.start();
+     //qDebug() << t.msec();
      for(int row = 0; row < queueModel->rowCount();row++){
              QString file = queueModel->item(row,(queueHeader.indexOf("Path")))->text();
 
@@ -367,7 +370,8 @@ void MainWindow::queueUpload(){
                                   }
                             }
                    }
-         }
+         }     //qDebug() << t.msec();
+
 }
 
 void MainWindow::resetFailItems(){
@@ -383,12 +387,31 @@ void MainWindow::resetFailItems(){
 
 
 /************************** Folder **************************************/
-void MainWindow::addFolder() {
+void MainWindow::addFolders(){
     QFileDialog *fileDialog = new QFileDialog(this);
-    QString folderPath = fileDialog->getExistingDirectory(this, tr("Select folder"), "");
-    QDir dir(folderPath);
-    int num_files = dir.entryInfoList(QStringList() << "*.jpg" << "*.JPG",QDir::Files).length();
+    QString folderPath = fileDialog->getExistingDirectory(this, tr("Select Event Folder"), "");
+    /* if "print" and "camera" folders do not exist in this directory, add the files
+     * in here to the queue like normal. Else, scan the 2 folders automatically */
 
+    /* create QDir for "camera" and "print" folders */
+    QDir print (folderPath + "/print");
+    QDir camera (folderPath + "/camera");
+
+    if(print.exists() && camera.exists()){
+        addFolder(print.path());
+        addFolder(camera.path());
+        qDebug() << print.path();
+        qDebug() << camera.path();
+    }else
+        addFolder(folderPath);
+}
+
+void MainWindow::addFolder(QString const &folderPath) {
+//    QFileDialog *fileDialog = new QFileDialog(this);
+//    QString folderPath = fileDialog->getExistingDirectory(this, tr("Select folder"), "");
+    QDir dir(folderPath);
+
+    int num_files = dir.entryInfoList(QStringList() << "*.jpg" << "*.JPG",QDir::Files).length();
     /* Make a list of the folder paths in the watchModel  */
     QStringList watchFolders;
     for(int row = 0; row < watchModel->rowCount();row++){
@@ -540,7 +563,7 @@ void MainWindow::linkExistingAlbum(QString const &id){
         gphoto->SetTargetAlbumToUpload(id);
 
         /* import last sannced folder from registry */
-        connect(gphoto,SIGNAL(albumIdConnected()),this,SLOT(importLastScannedFolders()));
+        connect(gphoto,SIGNAL(albumIdConnected(QString const,QString const)),this,SLOT(importLastScannedFolders()));
 
         /* Show message */
         connect(gphoto,SIGNAL(showMessage(QString const)), ui->statusBar, SLOT(showMessage(QString const)));
@@ -886,15 +909,17 @@ void MainWindow::showEmailTemplate() {
     emailDialog->show();
 
     /* Read the email.txt file */
-    QFileDialog *fileDialog = new QFileDialog(this);
-    QString emailPath = fileDialog->getOpenFileName(this, tr("Select Email file"), "", tr("Texts (*.txt)"));
+//    QFileDialog *fileDialog = new QFileDialog(this);
+//    QString emailPath = fileDialog->getOpenFileName(this, tr("Select Email file"), "", tr("Texts (*.txt)"));
+
+    /* testing */
+    QString  emailPath = "C:/Users/khuon/Documents/GitHub/PixylPush/Email.txt";
+
 
     /* Connect file watcher */
     emailWatcher = new QFileSystemWatcher (QStringList(emailPath));
     connect(emailWatcher,SIGNAL(fileChanged(const QString &)),this,SLOT(importEmailQueue(const QString &)));
 
-    /* Connect send email for testing only*/
-//    connect(emailDialog,SIGNAL(emailTemplateSignal(const QString &)),this,SLOT(importEmailQueue(const QString &)));
 }
 
 void MainWindow::importEmailQueue(const QString &emailPath){
@@ -902,9 +927,6 @@ void MainWindow::importEmailQueue(const QString &emailPath){
         showEmailTemplate();
         return;
     }
-
-//  QString  emailPath = "C:/Users/khuon/Documents/GitHub/PixylPush/Email.txt";
-    qDebug() << emailPath;
 
     QJsonArray outArr;
     QJsonArray arr;
@@ -919,22 +941,30 @@ void MainWindow::importEmailQueue(const QString &emailPath){
     for(int i = 0; i < arr.count(); i++){
         QJsonObject jsonItem = arr[i].toObject();
         QString status = jsonItem["Status"].toString();
-        QStringList paths = jsonItem["PhotoPath"].toString().split(",");
-        QString receiver = jsonItem["Email"].toString();
-//        qDebug() << paths;
+        QJsonArray pathsArray = jsonItem["PhotoPaths"].toArray();
+        QStringList paths;
+        foreach (QJsonValue v, pathsArray){
+            paths << v["path"].toString();
+        }
+
+
+        QString to = jsonItem["Email"].toString();
+        qDebug() << paths;
 
         /* Must check status of each entry, if status = Queue, then process, else ignore */
         if(status == "Queue"){
             if(paths.count() > 0){
+                qDebug() << "++++++++++";
 //                qDebug() << emailDialog->getTo() << emailDialog->getSubject() << emailDialog->getBody();
                 // send SMTP with receiver and path
-                sendSMTP(emailDialog->getTo(),
-                         receiver,
+                sendSMTP(emailDialog->getFrom(),
+                         to,
                          emailDialog->getSubject(),
                          emailDialog->getBody(),
                          paths);
                 jsonItem["Status"] = "Sent";
                 outArr.push_back(jsonItem);
+                qDebug() << outArr;
             }
          }else{
                 if(status == "Sent")
@@ -942,21 +972,33 @@ void MainWindow::importEmailQueue(const QString &emailPath){
               }
         }
     }
-    /* Save complettion to a text file */
-//    QFile outFile("C:/Users/khuon/Documents/Github/PixylPush/EmailDone.txt");
+
+/* Write log to a separate txt */
     QFileInfo info (emailPath);
     QDir dir (info.dir());
-//    QFile outFile (dir.path() + "/EmailDone.txt");
-//    QFile outFile( emailPath + "/EmailDone.txt"); // NOTE: EmailPath is the path to the txt file, not just the directory
-
-//    if (outFile.open(QIODevice::WriteOnly)) {
-      if(emailFile.open(QFile::WriteOnly)){
+    QFile outFile (dir.path() + "/Email.txt");
+    if (outFile.open(QIODevice::WriteOnly)) {
       QJsonDocument json_doc(outArr);
       QString json_string = json_doc.toJson();
 
-      emailFile.write(json_string.toLocal8Bit());
-      emailFile.close();
+      outFile.write(json_string.toLocal8Bit());
+      outFile.close();
     }
+
+/* Write log to the same Email.txt
+ BUG: writing to the file will trigger the importEmailQueue again,
+ reinitialize the ourArr variable, thus writing an empty array to the file.
+ Have to figure out a different way to avoid sending duplicate photos*/
+
+
+//    if(emailFile.open(QFile::WriteOnly)){
+//      qDebug() << outArr;
+//      QJsonDocument json_doc(outArr);
+//      QString json_string = json_doc.toJson();
+
+//      emailFile.write(json_string.toLocal8Bit());
+//      emailFile.close();
+//    }
 
 }
 
@@ -977,18 +1019,25 @@ void MainWindow::sendSMTP(QString const &sender,
     EmailAddress from("info.enchanted.oc@gmail.com", sender);
     message.setSender(&from);
 
-//    EmailAddress to("khuong.dinh.ng@gmail.com", "You");
 
-    EmailAddress to(receiver);
-
+    EmailAddress to(receiver, emailDialog->getTo());
     message.addRecipient(&to);
-
     message.setSubject(sub);
 
+    /* Replace the tag <> im the body */
+    QString temp_body = body;
+    if(gphoto != nullptr){
+        if(gphoto->isAlbumReady()){
+            qDebug() << gphoto->GetAlbumURL();
+            QFileInfo info (paths[0]);
+            temp_body.replace("<LINKS>", gphoto->GetAlbumURL());
+            temp_body.replace("<ALBUMNAME>", "<h3>" + gphoto->GetAlbumName() + "</h3>");
+            temp_body.replace("<DATE>", info.lastModified().toString(timeFormat) );
+        }
+    }
 
 
     // Now we need to create a MimeHtml object for HTML content
-/* Working */
     MimeHtml html;
     QString img_tag;
 
@@ -996,63 +1045,63 @@ void MainWindow::sendSMTP(QString const &sender,
         QFileInfo pic(path);
         img_tag.append(QString("<img src='cid:%1'/>").arg(pic.fileName()));
     }
+    html.setHtml(temp_body + img_tag);
 
-    html.setHtml(body + img_tag);
+    /* Add the inline photos */
+    int padding = 5 - paths.count() ;
+    QStringList temp_paths = paths;
+    switch (padding){
+        case 4:
+             temp_paths << "" << "" << "" << "" ;
+            break;
+        case 3:
+            temp_paths << "" << "" << "";
+            break;
+        case 2:
+            temp_paths << "" << "";
+            break;
+        case 1:
+            temp_paths << "";
+            break;
+        default:
+            temp_paths << "" << "" << "" << "" ;
+
+    }
+
+//    qDebug() << temp_paths;
+    QFileInfo pic1(temp_paths[0]);
+    MimeInlineFile image1 (new QFile(pic1.filePath()));
+    image1.setContentId(pic1.fileName());
+    image1.setContentType("image/jpg");
+
+    QFileInfo pic2(temp_paths[1]);
+    MimeInlineFile image2 (new QFile(pic2.filePath()));
+    image2.setContentId(pic2.fileName());
+    image2.setContentType("image/jpg");
+
+    QFileInfo pic3(temp_paths[2]);
+    MimeInlineFile image3 (new QFile(pic3.filePath()));
+    image3.setContentId(pic3.fileName());
+    image3.setContentType("image/jpg");
+
+    QFileInfo pic4(temp_paths[3]);
+    MimeInlineFile image4 (new QFile(pic4.filePath()));
+    image4.setContentId(pic4.fileName());
+    image4.setContentType("image/jpg");
+
+    QFileInfo pic5(temp_paths[4]);
+    MimeInlineFile image5 (new QFile(pic5.filePath()));
+    image5.setContentId(pic5.fileName());
+    image5.setContentType("image/jpg");
+
+
     message.addPart(&html);
+    message.addPart(&image1);
+    message.addPart(&image2);
+    message.addPart(&image3);
+    message.addPart(&image4);
+    message.addPart(&image5);
 
-    QFileInfo pic(paths[0]);
-    MimeInlineFile image (new QFile(pic.filePath()));
-    image.setContentId(pic.fileName());
-    image.setContentType("image/jpg");
-    message.addPart(&image);
-
-/* Not working */
-//    for(int i = 0; i < paths.count();i++){
-//        QFileInfo pic(paths[i]);
-//        MimeInlineFile image (new QFile(pic.filePath()));
-//        image.setContentId(pic.fileName());
-//        image.setContentType("image/jpg");
-//        message.addPart(&image);
-//    }
-/* END */
-
-
-//     Create a MimeInlineFile object for each image
-//    MimeInlineFile image1 (new QFile("C:/SmtpClient-for-Qt-1.1/demos/demo4/btn.jpg"));
-//    MimeInlineFile image2 (new QFile("C:/SmtpClient-for-Qt-1.1/demos/demo4/me.jpg"));
-//    MimeInlineFile image3 (new QFile("C:/SmtpClient-for-Qt-1.1/demos/demo4/screen.jpg"));
-
-//    QFileInfo pic1(paths[0]);
-//    MimeInlineFile image1 (new QFile(pic1.filePath()));
-
-//    // An unique content id must be setted
-//    image1.setContentId(pic1.fileName());
-//    image1.setContentType("image/jpg");
-
-//    QFileInfo pic2(paths[1]);
-//    MimeInlineFile image2 (new QFile(pic2.filePath()));
-
-//    image2.setContentId(pic2.fileName());
-//    image2.setContentType("image/jpg");
-
-
-//    QFileInfo pic3(paths[2]);
-//    MimeInlineFile image3 (new QFile (pic3.filePath()));
-//    image3.setContentId(pic3.fileName());
-//    image3.setContentType("image/jpg");
-
-
-
-//    MimeHtml html;
-
-//    html.setHtml(body + QString("<img src='cid:%1' />"
-//                                 "<img src='cid:%2' />"
-//                                 "<img src='cid:%3' />").arg(pic1.fileName()).arg(pic2.fileName()).arg(pic3.fileName()));
-
-//    message.addPart(&html);
-//    message.addPart(&image1);
-//    message.addPart(&image2);
-//    message.addPart(&image3);
 
     // Now the email can be sended
     if (!smtp.connectToHost())
@@ -1075,10 +1124,220 @@ void MainWindow::sendSMTP(QString const &sender,
 
 /************************** SMS **************************************/
 void MainWindow::showSMSTemplate() {
-    SMSTemplateDialog *smsDialog = new SMSTemplateDialog(this);
+    smsDialog = new SMSTemplateDialog(this);
     smsDialog->show();
+
+    /* Read the sms.txt file */
+//    QFileDialog *fileDialog = new QFileDialog(this);
+//    QString smslPath = fileDialog->getOpenFileName(this, tr("Select SMS file"), "", tr("Texts (*.txt)"));
+
+    /* testing */
+    QString  smsPath = "C:/Users/khuon/Documents/GitHub/PixylPush/SMS.txt";
+
+
+    /* Connect file watcher */
+    smsWatcher = new QFileSystemWatcher (QStringList(smsPath));
+    smsWatcher->disconnect();
+    connect(smsWatcher,SIGNAL(fileChanged(const QString &)),this,SLOT(importSMSQueue(const QString &)));
+
 }
-/************************** Email **************************************/
+
+
+void MainWindow::importSMSQueue(const QString &smsPath){
+    qDebug() << "SMS...";
+    if(smsDialog == nullptr){
+        showSMSTemplate();
+        return;
+    }
+
+    QJsonArray outArr;
+    QJsonArray arr;
+    QFile smsFile(smsPath);
+    if(smsFile.exists()){
+         smsFile.open(QFile::ReadOnly);
+         QJsonDocument document = QJsonDocument().fromJson(smsFile.readAll());
+         arr = document.array();
+         smsFile.close();
+
+    /* For each item, find the photo url, send the email, and add the status */
+    for(int i = 0; i < arr.count(); i++){
+        QJsonObject jsonItem = arr[i].toObject();
+        QString status = jsonItem["Status"].toString();
+        QJsonArray pathsArray = jsonItem["PhotoPaths"].toArray();
+        QStringList paths;
+        foreach (QJsonValue v, pathsArray){
+            paths << v["path"].toString();
+        }
+        qDebug() << paths;
+
+
+        carrier_map["ATT"] = "@txt.att.net";
+        carrier_map["T-Mobile"] = "@tmomail.net";
+        carrier_map["Verizon"] = "@vtext.com";
+
+        QString to = jsonItem["Phone"].toString().replace("-","") + carrier_map.value(jsonItem["Carrier"].toString());
+
+        qDebug() << to;
+
+        /* Must check status of each entry, if status = Queue, then process, else ignore */
+        if(status == "Queue"){
+            if(paths.count() > 0){
+                // send SMTP with receiver and path
+                sendSMTPsms( to,
+                             jsonItem["Phone"].toString(),
+                             smsDialog->getBody(),
+                             paths);
+                jsonItem["Status"] = "Sent";
+                outArr.push_back(jsonItem);
+            }
+         }else{
+                if(status == "Sent")
+                    continue;
+              }
+        }
+    }
+
+/* Save complettion to a text file */
+    QFileInfo info (smsPath);
+    QDir dir (info.dir());
+    QFile outFile (dir.path() + "/SMSDone.txt");
+
+    if (outFile.open(QIODevice::WriteOnly)) {
+      QJsonDocument json_doc(outArr);
+      QString json_string = json_doc.toJson();
+
+      outFile.write(json_string.toLocal8Bit());
+      outFile.close();
+    }
+
+/* Write log to the same sms.txt */
+//    if(smsFile.open(QFile::WriteOnly)){
+//      QJsonDocument json_doc(outArr);
+//      QString json_string = json_doc.toJson();
+
+//      smsFile.write(json_string.toLocal8Bit());
+//      smsFile.close();
+//    }
+
+}
+
+
+void MainWindow::sendSMTPsms( QString const &receiver,
+                              QString const &guest_num,
+                              QString const &body,
+                              QStringList const &paths){
+
+    // First create the SmtpClient object and set the user and the password.
+    SmtpClient smtp("smtp.gmail.com", 465, SmtpClient::SslConnection);
+
+    smtp.setUser("info.enchanted.oc@gmail.com");
+    smtp.setPassword("takemetonewheights$2020");
+
+    // Create a MimeMessage
+    MimeMessage message;
+    EmailAddress from("info.enchanted.oc@gmail.com");
+    message.setSender(&from);
+
+
+    EmailAddress to(receiver);
+    message.addRecipient(&to);
+
+    /* Replace the tag <> im the body */
+    QString temp_body = body;
+    if(gphoto != nullptr){
+        if(gphoto->isAlbumReady()){
+            QFileInfo info (paths[0]);
+            temp_body.replace("<LINKS>", gphoto->GetAlbumURL());
+            temp_body.replace("<ALBUMNAME>", "<h3>" + gphoto->GetAlbumName() + "</h3>");
+            temp_body.replace("<DATE>", info.lastModified().toString(timeFormat));
+            temp_body.replace("<PHONE>", guest_num);
+
+        }
+    }
+
+
+    // Now we need to create a MimeHtml object for HTML content
+    MimeHtml html;
+    QString img_tag;
+
+    foreach(QString path, paths){
+        QFileInfo pic(path);
+        img_tag.append(QString("<img src='cid:%1'/>").arg(pic.fileName()));
+    }
+    html.setHtml(temp_body + img_tag);
+
+    /* Add the inline photos */
+    int padding = 5 - paths.count() ;
+    QStringList temp_paths = paths;
+    switch (padding){
+        case 4:
+             temp_paths << "" << "" << "" << "" ;
+            break;
+        case 3:
+            temp_paths << "" << "" << "";
+            break;
+        case 2:
+            temp_paths << "" << "";
+            break;
+        case 1:
+            temp_paths << "";
+            break;
+        default:
+            temp_paths << "" << "" << "" << "" ;
+
+    }
+
+//    qDebug() << temp_paths;
+    QFileInfo pic1(temp_paths[0]);
+    MimeInlineFile image1 (new QFile(pic1.filePath()));
+    image1.setContentId(pic1.fileName());
+    image1.setContentType("image/jpg");
+
+    QFileInfo pic2(temp_paths[1]);
+    MimeInlineFile image2 (new QFile(pic2.filePath()));
+    image2.setContentId(pic2.fileName());
+    image2.setContentType("image/jpg");
+
+    QFileInfo pic3(temp_paths[2]);
+    MimeInlineFile image3 (new QFile(pic3.filePath()));
+    image3.setContentId(pic3.fileName());
+    image3.setContentType("image/jpg");
+
+    QFileInfo pic4(temp_paths[3]);
+    MimeInlineFile image4 (new QFile(pic4.filePath()));
+    image4.setContentId(pic4.fileName());
+    image4.setContentType("image/jpg");
+
+    QFileInfo pic5(temp_paths[4]);
+    MimeInlineFile image5 (new QFile(pic5.filePath()));
+    image5.setContentId(pic5.fileName());
+    image5.setContentType("image/jpg");
+
+
+    message.addPart(&html);
+    message.addPart(&image1);
+    message.addPart(&image2);
+    message.addPart(&image3);
+    message.addPart(&image4);
+    message.addPart(&image5);
+
+
+    // Now the email can be sended
+    if (!smtp.connectToHost())
+        qDebug() << "Failed to connect to host!" << endl;
+
+
+    if (!smtp.login())
+        qDebug() << "Failed to login!" << endl;
+
+
+    if (!smtp.sendMail(message))
+        qDebug() << "Failed to send mail!" << endl;
+
+    smtp.quit();
+}
+
+/************************** END **************************************/
 
 
 MainWindow::~MainWindow()

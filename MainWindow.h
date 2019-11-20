@@ -16,6 +16,7 @@
 #include <QIcon>
 #include <QColor>
 #include <QFileSystemWatcher>
+#include <QTime>
 
 #include "SettingsDialog.h"
 #include "CreateAlbumDialog.h"
@@ -44,7 +45,8 @@ private slots:
     void addQueue();
     void removeQueues();
     void clearQueue();
-    void addFolder();
+    void addFolder(QString const &folderPath);
+    void addFolders();
     void removeFolders();
     void clearWatchlist();
     void createAlbum(QString const &name, QString const &desc);
@@ -73,14 +75,18 @@ private slots:
     void stopQueue();
 
     void resetFailItems();
-//    void sendSMTP(QString const &sender, QString const &receiver, QString const &sub, QString const &body,
-//                  QString const &path1, QString const &path2,QString const &path3);
+
 
     void sendSMTP(QString const &sender,
                   QString const &receiver,
                   QString const &sub,
                   QString const &body,
                   QStringList const &paths);
+
+    void sendSMTPsms( QString const &receiver,
+                      QString const &guest_num,
+                      QString const &body,
+                      QStringList const &paths);
 
     void googleLogIn();
     void googleLogOut();
@@ -107,6 +113,8 @@ public slots:
     QString loadUsedAlbum(QString const &key);
 
     void importEmailQueue(const QString &emailPath);
+    void importSMSQueue(const QString &smsPath);
+
 
 private:
     Ui::MainWindow *ui;
@@ -134,9 +142,10 @@ private:
     QJsonObject jsonObj;
 
     EmailTemplateDialog *emailDialog = nullptr;
-//    QString emailPath;
-
+    SMSTemplateDialog *smsDialog = nullptr;
     QFileSystemWatcher * emailWatcher = nullptr;
+    QFileSystemWatcher * smsWatcher = nullptr;
+    QMap<QString,QString> carrier_map;
 
     QColor grey = QColor("grey");
     QColor white = QColor("white");

@@ -1,3 +1,2 @@
-[{"PhotoPath":"C:/SmtpClient-for-Qt-1.1/demos/demo4/screen.jpg","Email":"khuong.dinh.ng@gmail.com", "Status":"Queue"},
-{"PhotoPath":"C:/SmtpClient-for-Qt-1.1/demos/demo4/me.jpg","Email":"khuong.dinh.ng@gmail.com", "Status":"Queue"}
+[
 ]

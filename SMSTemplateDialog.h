@@ -14,9 +14,23 @@ class SMSTemplateDialog : public QDialog
 public:
     explicit SMSTemplateDialog(QWidget *parent = nullptr);
     ~SMSTemplateDialog();
+    QString body;
 
 private:
     Ui::SMSTemplateDialog *ui;
+
+private slots:
+    void emitTemplateSignals();
+
+public slots:
+    QString getBody();
+
+signals:
+    void smsTemplateSignal(const QString &sig = "NA");
+
 };
+
+
+
 
 #endif // SMSTEMPLATEDIALOG_H

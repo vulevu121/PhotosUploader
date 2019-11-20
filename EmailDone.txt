@@ -1,12 +1,14 @@
 [
     {
         "Email": "khuong.dinh.ng@gmail.com",
-        "PhotoPath": "C:/SmtpClient-for-Qt-1.1/demos/demo4/screen.jpg",
-        "Status": "Sent"
-    },
-    {
-        "Email": "khuong.dinh.ng@gmail.com",
-        "PhotoPath": "C:/SmtpClient-for-Qt-1.1/demos/demo4/me.jpg",
+        "PhotoPaths": [
+            {
+                "path": "C:/Users/khuon/Documents/GitHub/PixylPush/screen.jpg"
+            },
+            {
+                "path": "C:/Users/khuon/Documents/GitHub/PixylPush/lock.jpg"
+            }
+        ],
         "Status": "Sent"
     }
 ]

@@ -28,7 +28,7 @@
        </widget>
       </item>
       <item>
-       <widget class="QPlainTextEdit" name="plainTextEdit">
+       <widget class="QPlainTextEdit" name="bodyEdit">
         <property name="placeholderText">
          <string>Preferred length of 160 chars. Messages with more than 160 chars will be split into pieces 153 chars with maximum length of 918 chars.</string>
         </property>
