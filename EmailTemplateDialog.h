@@ -4,6 +4,9 @@
 #include <QDialog>
 #include <QString>
 #include <QDebug>
+#include <QSettings>
+#include <QJsonDocument>
+#include <QJsonObject>
 namespace Ui {
 class EmailTemplateDialog;
 }
@@ -28,10 +31,12 @@ public slots:
 
 private:
     Ui::EmailTemplateDialog *ui;
+    QSettings *settings = new QSettings("Pixyl", "PixylPush");
 
 
 private slots:
     void emitTemplateSignal();
+    void loadEmailSettings();
 
 
 signals:

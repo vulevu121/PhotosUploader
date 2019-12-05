@@ -49,6 +49,7 @@ signals:
     void showMessage(QString const &msg);
     void albumIdConnected(QString const &id, QString const &name);
     void existingUrlReady(QString const &url);
+    void progress_bar(int value);
 
 private slots:
     void SetAccessToken(QString const &token);

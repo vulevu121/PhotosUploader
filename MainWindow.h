@@ -17,6 +17,7 @@
 #include <QColor>
 #include <QFileSystemWatcher>
 #include <QTime>
+#include <QMessageBox>
 
 #include "SettingsDialog.h"
 #include "CreateAlbumDialog.h"
@@ -41,6 +42,7 @@ public:
     ~MainWindow();
 signals:
     void existingAlbumSignal(QString const &id);
+    void folderAdded (QString const &folderPath);
 
 private slots:
     void addQueue();
@@ -56,9 +58,15 @@ private slots:
     void showCreateAlbumDialog();
     void queueUpload();
     void folderScan();
+
     void queueTimerInit();
     void queueTimerStart();
     void queueTimerStop();
+
+    void progressBarTimerInit();
+    void progressBarUpdate();
+
+
 
     void folderTimerInit();
     void folderTimerStart();
@@ -76,13 +84,13 @@ private slots:
     void stopQueue();
 
     void resetFailItems();
-    void sendSMTP(QString const &sender,
+    bool sendSMTP(QString const &sender,
                   QString const &receiver,
                   QString const &sub,
                   QString const &body,
                   QStringList const &paths);
 
-    void sendSMTPsms( QString const &receiver,
+    bool sendSMTPsms( QString const &receiver,
                       QString const &guest_num,
                       QString const &body,
                       QStringList const &paths);
@@ -101,11 +109,27 @@ private slots:
     void displayAlbumName(QString const &id, QString const &name);
 
     void downloadQR(QString const &url="www.google.com");
-    void saveQR();
+    void saveQR(QString const &location);
+    void prepQrLocation();
+    bool compareStringList(QStringList &a, QStringList &b);
+
+    void addEmailQueue();
+    void removeEmailQueue();
+    void clearEmailQueue();
+    void addToEmailModel(QList<QStandardItem*> line);
+
+    void emailGuests();
+
+    void addSMSQueue(QList<QStandardItem*> line);
+    void smsGuests();
+
+    void showErrMsg();
+    void enableAddButtons();
+    void disableAddButtons();
 
 public slots:
     void importMastertLog();
-    void searchFolderLog(QString const &folder_path);
+    void findUploadLog(QString const &folder_path);
     void importLastScannedFolders();
     void saveProgress();
     void saveMasterLog();
@@ -113,9 +137,12 @@ public slots:
     QIcon colorIcon(const QString &path, const QColor &color);
     QString loadUsedAlbum(QString const &key);
 
-    void importEmailQueue(const QString &emailPath);
-    void importSMSQueue(const QString &smsPath);
+    void importToEmailModel(const QString &emailPath);
+    QJsonArray openFile(const QString &path);
+    QStringList toStringList(QJsonArray &array, QString key);
 
+    void importSMSQueue(const QString &smsPath);
+    void updateProgressBar(int val);
 
 private:
     Ui::MainWindow *ui;
@@ -126,6 +153,12 @@ private:
     QStandardItemModel *watchModel = nullptr;
     QStringList watchHeader;
 
+    QStandardItemModel * emailModel = nullptr;
+    QStringList emailHeader;
+
+    QStandardItemModel * smsModel = nullptr;
+    QStringList smsHeader;
+
     CreateAlbumDialog * createAlbumDialog = nullptr;
     GooglePhoto * gphoto = nullptr;
     GMAIL *email = nullptr;
@@ -134,6 +167,7 @@ private:
     QTimer * queueTimer = nullptr;
     QTimer * folderTimer = nullptr;
     QTimer * saveTimer = nullptr ;
+    QTimer * progressBarTimer = nullptr;
     QTimer elapsedTime;
 
     QStringList uploadedList;
@@ -148,6 +182,7 @@ private:
     QFileSystemWatcher * smsWatcher = nullptr;
     QMap<QString,QString> carrier_map;
     FileDownloader *m_pImgCtrl = nullptr;
+    QMessageBox msgBx;
 
 
     QColor grey = QColor("grey");

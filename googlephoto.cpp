@@ -92,8 +92,8 @@ bool GooglePhoto::isAlbumReady(){
 
 }
 void GooglePhoto::UploadPhoto(QString const &pathToPic){
-
     qDebug() << "Uploading to existing album...";
+    emit progress_bar(10);
 
     if(accessToken.isEmpty()){
         qDebug() << "No access token!";
@@ -114,12 +114,14 @@ void GooglePhoto::UploadPhoto(QString const &pathToPic){
     UploadPicData(pathToPic);
     /* Create the file on Google Photo */
     connect(this,SIGNAL(uploadTokenReceived(QString const)),this,SLOT(CreateMediaInAlbum(QString const)));
+
 }
 
 
 
 void GooglePhoto::UploadPicData(QString const &path){
         qDebug() << "Uploading binary";
+        emit progress_bar(30);
 
         if (manager == nullptr) {
              manager = new QNetworkAccessManager(this);
@@ -146,14 +148,18 @@ void GooglePhoto::UploadPicData(QString const &path){
         manager->post(req, fileBytes);
         connect(this->manager, SIGNAL(finished(QNetworkReply*)),
                 this, SLOT(UploadReply(QNetworkReply*)));
+
 }
 
 void GooglePhoto::UploadReply(QNetworkReply *reply) {
+    emit progress_bar(50);
+
     if(reply->error()) {
         qDebug() << "Upload Binary Data Error!";
         QString err = reply->errorString();
         Uploading = false;
         manager->disconnect();
+//        emit progress_bar(0);
         emit mediaCreateFailed(fileName);
 
         if (err == "Host accounts.google.com not found")
@@ -166,6 +172,7 @@ void GooglePhoto::UploadReply(QNetworkReply *reply) {
         uploadToken = QString(reply->readAll());
         manager->disconnect();
         emit uploadTokenReceived(uploadToken);
+
      }
 }
 
@@ -175,6 +182,7 @@ void GooglePhoto::CreateMediaInAlbum(QString const &token){
     if (manager == nullptr) {
         manager = new QNetworkAccessManager(this);
     }
+    emit progress_bar(70);
 
     QUrl endpoint("https://photoslibrary.googleapis.com/v1/mediaItems:batchCreate");
     QNetworkRequest req(endpoint);
@@ -203,13 +211,16 @@ void GooglePhoto::CreateMediaInAlbum(QString const &token){
     manager->post(req,jsonRequest);
     connect(this->manager, SIGNAL(finished(QNetworkReply*)),
             this, SLOT(CreateMediaReply(QNetworkReply*)));
+
 }
 
 void GooglePhoto::CreateMediaReply(QNetworkReply *reply) {
     if(reply->error()) {
         qDebug() << "Create Media Error" << reply->readAll();
         manager->disconnect();
+        emit progress_bar(0);
         emit mediaCreateFailed(fileName);
+
 
     } else {
         qDebug() << "Create Media Success!";
@@ -218,7 +229,9 @@ void GooglePhoto::CreateMediaReply(QNetworkReply *reply) {
         uploadedPhotoURL = jsonObj["newMediaItemResults"].toArray()[0].toObject()["mediaItem"].toObject()["productUrl"].toString();
         manager->disconnect();
         manager->disconnect();
+        emit progress_bar(90);
         emit mediaCreated(fileName);
+
 
     }
     /* set flag to false wheter upload is success or not */
