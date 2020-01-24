@@ -48,10 +48,14 @@ QString EmailTemplateDialog::getSubject(){
 void EmailTemplateDialog::loadEmailSettings(){
     QJsonDocument doc = QJsonDocument().fromJson(settings->value("savedEmailSettings").toByteArray());
     QJsonObject obj = doc.object();
-    ui->toEdit->setText(obj["To"].toString());
-    ui->subjectEdit->setText(obj["Subject"].toString());
-    ui->fromEdit->setText(obj["From"].toString());
-    ui->bodyEdit->insertPlainText(obj["Body"].toString());
+    to = obj["To"].toString();
+    subject = obj["Subject"].toString();
+    from = obj["From"].toString();
+    body = obj["Body"].toString();
+    ui->toEdit->setText(to);
+    ui->subjectEdit->setText(subject);
+    ui->fromEdit->setText(from);
+    ui->bodyEdit->insertPlainText(body);
 }
 
 EmailTemplateDialog::~EmailTemplateDialog()

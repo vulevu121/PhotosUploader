@@ -1273,8 +1273,6 @@ void MainWindow::addToEmailModel(QList<QStandardItem*> line){
 }
 
 void MainWindow::emailGuests(){
-    /* Resize the photos and save to "Reiszed*/
-
     /* Send out email */
     for(int row = 0; row < emailModel->rowCount();row++){
         QString status = emailModel->item(row,emailHeader.indexOf("Status"))->text();

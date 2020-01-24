@@ -56,13 +56,12 @@ void GoogleOAuth2::AuthenticateReply(QNetworkReply *reply) {
             emit showMessage(err + QString(". Check WiFi connection."));
         }else{emit showMessage(err);}
     } else {
-        qDebug() << "Access Code request success!";
+        qDebug() << "Access request replied!";
         QUrl url(reply->url());
 
-        /* This will not save cookie for this session */
         view->setPage(page);
         view->setUrl(url);
-        view->show();
+        /* do NOT show the view by default */
         view->disconnect();
         connect(view,SIGNAL(urlChanged(QUrl)),this,SLOT(AuthenticateRedirectReply(QUrl)));
         manager->disconnect();
@@ -74,18 +73,21 @@ void GoogleOAuth2::AuthenticateReply(QNetworkReply *reply) {
 
 
 void GoogleOAuth2::AuthenticateRedirectReply(QUrl url) {
-    /* hide the window to prevent customer seeing an error page */
-//    view->hide();
-    qDebug() << "Access Code Request Replied!";
+    qDebug() << "URL changed!";
     QString url_string(url.toString());
     url_string.replace("?","&");
     QStringList list  = url_string.split(QString("&"));
 //    qDebug() << list;
-    if (list[0] == settingsObject["redirect_uris"].toArray()[0].toString()){
-        authCode = list.at(1);
-//        qDebug() << authCode;
-        emit authCodeReady();
+    /* show View if login info is requested */
+    if(url_string.contains("https://accounts.google.com/signin/oauth"))
+        view->show();
+    else{
+        if ((list[0] == settingsObject["redirect_uris"].toArray()[0].toString())&& url_string.contains("code=")){
+            authCode = list.at(1);
+            emit authCodeReady();
+        }
     }
+
 }
 
 void GoogleOAuth2::ExchangeAccessToken(){

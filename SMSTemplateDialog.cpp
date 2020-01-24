@@ -13,11 +13,12 @@ SMSTemplateDialog::SMSTemplateDialog(QWidget *parent) :
 
 void SMSTemplateDialog::emitTemplateSignals(){
     body = ui->bodyEdit->toPlainText();
-
+    from = ui->fromLineEdit->text();
     /* save sms settings to registry */
     qDebug() << "Saving SMS settings to registry";
     QJsonObject obj;
     obj["Body"] = body;
+    obj["From"] = from;
     QJsonDocument doc(obj);
     settings->setValue("savedSMSSettings",QString(doc.toJson()));
     settings->sync();
@@ -29,13 +30,19 @@ void SMSTemplateDialog::emitTemplateSignals(){
 void SMSTemplateDialog::loadSMSSettings(){
     QJsonDocument doc = QJsonDocument().fromJson(settings->value("savedSMSSettings").toByteArray());
     QJsonObject obj = doc.object();
-    ui->bodyEdit->insertPlainText(obj["Body"].toString());
+    body = obj["Body"].toString();
+    from = obj["From"].toString();
+    ui->bodyEdit->insertPlainText(body);
+    ui->fromLineEdit->setText(from);
 }
 
 QString SMSTemplateDialog::getBody(){
     return body;
 }
 
+QString SMSTemplateDialog::getFrom(){
+    return from;
+}
 SMSTemplateDialog::~SMSTemplateDialog()
 {
     delete ui;

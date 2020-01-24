@@ -19,6 +19,7 @@ public:
     explicit SMSTemplateDialog(QWidget *parent = nullptr);
     ~SMSTemplateDialog();
     QString body = "<p><h3>No message body</h3></p>";
+    QString from = "noreply";
 
 private:
     Ui::SMSTemplateDialog *ui;
@@ -30,6 +31,7 @@ private slots:
 
 public slots:
     QString getBody();
+    QString getFrom();
 
 signals:
     void smsTemplateSignal(const QString &sig = "NA");
