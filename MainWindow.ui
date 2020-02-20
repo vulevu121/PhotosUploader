@@ -509,7 +509,7 @@
      <x>0</x>
      <y>0</y>
      <width>747</width>
-     <height>21</height>
+     <height>20</height>
     </rect>
    </property>
   </widget>
@@ -627,7 +627,28 @@
             </widget>
            </item>
            <item>
-            <widget class="QComboBox" name="comboBox"/>
+            <widget class="QComboBox" name="carrierComboBox">
+             <item>
+              <property name="text">
+               <string>T-Mobile</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>AT&amp;T</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>Verizon</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>MetroPCS</string>
+              </property>
+             </item>
+            </widget>
            </item>
           </layout>
          </item>

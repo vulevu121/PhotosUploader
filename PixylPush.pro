@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT += widgets network networkauth gui core
+QT += widgets network networkauth gui core sql
 QT += webenginewidgets
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
@@ -37,6 +37,7 @@ SOURCES += \
         EmailTemplateDialog.cpp \
         SMSTemplateDialog.cpp \
         SettingsDialog.cpp \
+    dbmanager.cpp \
     filedownloader.cpp \
         gmail.cpp \
         googleoauth2.cpp \
@@ -51,6 +52,7 @@ HEADERS += \
         MainWindow.h \
         SMSTemplateDialog.h \
         SettingsDialog.h \
+    dbmanager.h \
     filedownloader.h \
         gmail.h \
         googleoauth2.h \
