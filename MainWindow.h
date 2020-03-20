@@ -19,7 +19,7 @@
 #include <QTime>
 #include <QMessageBox>
 #include <QThread>
-
+#include <QProgressBar>
 #include <QtSql/QSqlDatabase>
 #include <QtSql/QSqlDriver>
 #include <QtSql/QSqlError>
@@ -41,26 +41,27 @@
 class EmailWorker : public QObject {
     Q_OBJECT
 public:
-    EmailWorker();
+    EmailWorker(DBmanager *db, GooglePhoto *gphoto);
     ~EmailWorker();
 
 public slots:
     void sendSMTP(QString const &sender,
-             QString const &receiver,
-             QString const &sub,
-             QString const &body,
-             QStringList paths,
-             QString const &albumName,
-             QString const &albumUrl);
+                          QString const &receiver,
+                          QString const &sub,
+                          QString const &body,
+                          QStringList paths);
+    void emailGuests();
 
 signals:
     void finished();
 
 private:
+    DBmanager *m_db;
+    GooglePhoto *m_gphoto;
     QSettings *settings = new QSettings("Pixyl", "PixylPush");
     QString body;
     QString subject;
-    QString to;
+    QString TO;
     QString from;
     QString timeFormat = "MM/dd/yyyy hh:mm AP";
 
@@ -68,6 +69,26 @@ private slots:
 
 };
 
+
+/********** WORKER ************/
+class Worker : public QObject {
+    Q_OBJECT
+public:
+    Worker();
+    ~Worker();
+
+public slots:
+    void work();
+    void stopWork();
+
+signals:
+    void progress(int);
+
+private:
+    bool stop = false;
+
+};
+/*******************************/
 
 
 namespace Ui {
@@ -88,49 +109,36 @@ signals:
 
 private slots:
     void addQueue();
-    void addToQueueModel(QList<QStandardItem *> queueRow);
-    void removeQueues();
+    void removeQueue();
     void clearQueue();
     void addFolder(QString const &folderPath);
     void addFolders();
-    void removeFolders();
-    void clearWatchlist();
+    void removeFolder();
+    void clearFolders();
     void createAlbum(QString const &name, QString const &desc);
     void linkExistingAlbum(QString const &id);
     void showCreateAlbumDialog();
-    void queueUpload();
+    void uploadQueue();
     void scaleImage(QString const &filePath);
     void scaleImages(QDir &dir);
 
-    void folderScan();
+    void scanFolder();
     void queueTimerInit();
     void queueTimerStart();
     void queueTimerStop();
-    void progressBarTimerInit();
-    void progressBarUpdate();
     void folderTimerInit();
     void folderTimerStart();
     void folderTimerStop();
     void saveTimerInit();
 
-    void updateUploadedList(QString const &filePath);
-    void updateFailedList(QString const &filePath);
+    void setQueueStatusComplete(QString const &filePath);
+    void setQueueStatusFailed(QString const &filePath);
     void syncSettings();
     void showEmailTemplate();
     void showSMSTemplate();
     void resumeQueue();
     void stopQueue();
-    void resetFailedUpload();
-    bool sendSMTP(QString const &sender,
-                  QString const &receiver,
-                  QString const &sub,
-                  QString const &body,
-                  QStringList paths);
-
-    bool sendSMTPsms( QString const &receiver,
-                      QString const &guest_num,
-                      QString const &body,
-                      QStringList paths);
+    void resetQueueStatus();
 
     void googleLogIn();
     void googleLogOut();
@@ -145,18 +153,23 @@ private slots:
     void downloadQR(QString const &url="www.google.com");
     void saveQR(QString const &location);
     void prepQrLocation();
-    bool compareStringList(QStringList &a, QStringList &b);
+    void showProgressBar();
+    void hideProgressBar();
 
     /* Email */
     void addEmailQueue();
     void removeEmailQueue();
     void clearEmailQueue();
-    void addToWatchModel(QList<QStandardItem *> watchRow);
 //    void exportEmailLog();
     void importToEmailModel(const QString &emailPath);
     void emailGuests();
     void selectFileToEmail();
     void addEmailRow();
+    bool sendSMTP(QString const &sender,
+                  QString const &receiver,
+                  QString const &sub,
+                  QString const &body,
+                  QStringList paths);
 
     /* SMS */
     void addSMSQueue();
@@ -167,22 +180,23 @@ private slots:
     void importToSMSModel(const QString &smsPath);
     void smsGuests();
 //    void exportSMSLog();
+    bool sendSMTPsms( QString const &receiver,
+                      QString const &guest_num,
+                      QString const &body,
+                      QStringList paths);
 
     void showErrMsg();
+    void enableResume();
+    void enableStop();
+    void disableResume();
+    void disableStop();
     void enableAddButtons();
     void disableAddButtons();
-    void importMastertLog();
-    void importUploadLog(QDir dir);
-    void logToModel();
     void scanDirectory(QString const &path);
-    void importLastScannedFolders();
-    void saveUploadLog();
-    void saveMasterLog();
-    void saveUsedAlbum(QString const &id, QString const &name);
+
     QString loadUsedAlbum(QString const &key);
     QJsonArray openFile(const QString &path);
     QStringList toStringList(QJsonArray &array);
-    void updateProgressBar(int val);
 
 public slots:
     QIcon colorIcon(const QString &path, const QColor &color);
@@ -190,14 +204,6 @@ public slots:
 private:
     Ui::MainWindow *ui;
     SettingsDialog *settingsDialog = nullptr;
-    QStandardItemModel *queueModel = nullptr;
-    QStringList queueHeader;
-    QStandardItemModel *watchModel = nullptr;
-    QStringList watchHeader;
-    QStandardItemModel * emailModel = nullptr;
-    QStringList emailHeader;
-    QStandardItemModel * smsModel = nullptr;
-    QStringList smsHeader;
     CreateAlbumDialog * createAlbumDialog = nullptr;
     GooglePhoto * gphoto = nullptr;
     GMAIL *email = nullptr;
@@ -205,16 +211,21 @@ private:
     QTimer * queueTimer = nullptr;
     QTimer * folderTimer = nullptr;
     QTimer * saveTimer = nullptr ;
-    QTimer * progressBarTimer = nullptr;
     QTimer elapsedTime;
-    QStringList uploadedList;
-    QJsonArray uploadedListJson;
+//    QStringList uploadedList;
+//    QJsonArray uploadedListJson;
+
     QMap<QString,int> uploadFailedList;
     bool isReady = true;
     EmailTemplateDialog * emailDialog = nullptr;
     SMSTemplateDialog  * smsDialog = nullptr;
     QFileSystemWatcher * watcher = nullptr;
 
+    QThread* thread = nullptr;
+    Worker* worker = nullptr;
+    bool isDone = true;
+    QString const SMTP_user = "info.enchanted.oc@gmail.com";
+    QString const SMTP_pass = "PixylBoys$2020";
     QMap<QString,QString> carrier_map;
     FileDownloader *m_pImgCtrl = nullptr;
     QMessageBox msgBx;
@@ -225,45 +236,9 @@ private:
     QSettings *settings = new QSettings("Pixyl", "PixylPush");
 
     DBmanager *m_db = nullptr;
-};
-
-
-class Worker : public QObject {
-    Q_OBJECT
-public:
-    Worker();
-    ~Worker();
-
-public slots:
-    void setupQueue(QStandardItemModel* model,QStringList const &header);
-    void setupWatch(QStandardItemModel* model, QStringList const &header);
-    void process();
-    void setIntervalQueue(int interval);
-    void setIntervalWatch(int interval);
-
-
-signals:
-    void finished();
-    void error(QString err);
-
-private:
-    QTimer * m_queueTimer = nullptr;
-    QTimer * m_watchTimer = nullptr;
-    QStandardItemModel *w_queueModel = nullptr;
-    QStringList w_queueHeader;
-    QStandardItemModel *w_watchModel = nullptr;
-    QStringList w_watchHeader;
-    QString timeFormat = "MM/dd/yyyy hh:mm AP";
-    QSettings *settings = new QSettings("Pixyl", "PixylPush");
-
-private slots:
-    void startTimer();
-    void stopTimer();
-    void processQueue();
-    void processWatch();
-    void w_addToQueueModel(QList<QStandardItem *> row);
 
 };
+
 
 
 

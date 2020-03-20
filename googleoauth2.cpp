@@ -104,6 +104,7 @@ void GoogleOAuth2::ExchangeAccessToken(){
 
     connect(this->manager, SIGNAL(finished(QNetworkReply*)),
             this, SLOT(ExchangeTokenReply(QNetworkReply*)));
+    connect(view,SIGNAL(loadStarted()),view,SLOT(close()));
 }
 
 void GoogleOAuth2::ExchangeTokenReply(QNetworkReply *reply) {
