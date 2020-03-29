@@ -140,7 +140,7 @@ void GoogleOAuth2::ExchangeTokenReply(QNetworkReply *reply) {
         /* disconnext previous connect */
         manager->disconnect();
         emit authenticated(accessToken);
-        emit showMessage("Log In successful.");
+        emit showMessage("Log In successful");
     }
     /* Close Web view after log in */
     view->close();

@@ -20,6 +20,7 @@
 #include <QMessageBox>
 #include <QThread>
 #include <QProgressBar>
+#include <QPropertyAnimation>
 #include <QtSql/QSqlDatabase>
 #include <QtSql/QSqlDriver>
 #include <QtSql/QSqlError>
@@ -38,39 +39,73 @@
 #include "C:/SmtpClient-for-Qt-1.1/src/SmtpMime"
 
 
+/******* EMAIL WORKER ********/
 class EmailWorker : public QObject {
     Q_OBJECT
 public:
-    EmailWorker(DBmanager *db, GooglePhoto *gphoto);
+    EmailWorker(DBmanager *db,GooglePhoto *gphoto, QString const &user, QString const &password);
     ~EmailWorker();
 
+private:
+    DBmanager *m_db = nullptr;
+    GooglePhoto *m_gphoto;
+    QSettings *settings = new QSettings("Pixyl", "PixylPush");
+    QString m_body;
+    QString m_subject;
+    QString m_to;
+    QString m_from;
+    QString timeFormat = "MM/dd/yyyy hh:mm AP";
+    QString m_SMTP_user;
+    QString m_SMTP_pass;
+    QString connection_name = "thread1_connection";
+
+signals:
+    void updatedRow(int row);
+    void finished();
+
 public slots:
-    void sendSMTP(QString const &sender,
+    void processQueue();
+    bool sendSMTP(QString const &sender,
                           QString const &receiver,
                           QString const &sub,
                           QString const &body,
                           QStringList paths);
-    void emailGuests();
+};
 
-signals:
-    void finished();
+/******** SMS WORKER ******/
+class SMSWorker : public QObject {
+    Q_OBJECT
+public:
+    SMSWorker(DBmanager *db, GooglePhoto *gphoto, QString const &user, QString const &password,QMap<QString,QString> map);
+    ~SMSWorker();
 
 private:
-    DBmanager *m_db;
+    DBmanager *m_db = nullptr;
     GooglePhoto *m_gphoto;
     QSettings *settings = new QSettings("Pixyl", "PixylPush");
-    QString body;
-    QString subject;
-    QString TO;
-    QString from;
+    QString m_body;
+    QString m_from;
     QString timeFormat = "MM/dd/yyyy hh:mm AP";
+    QString m_SMTP_user;
+    QString m_SMTP_pass;
+    QMap<QString,QString> m_map;
 
-private slots:
+signals:
+    void updatedRow(int row);
+    void finished();
 
+public slots:
+    void processQueue();
+    bool sendSMTP(QString const &receiver,
+                  QString const &guest_num,
+                  QString const &body,
+                  QStringList paths);
 };
 
 
-/********** WORKER ************/
+
+
+/********** PROGRESS BAR WORKER ************/
 class Worker : public QObject {
     Q_OBJECT
 public:
@@ -111,18 +146,34 @@ private slots:
     void addQueue();
     void removeQueue();
     void clearQueue();
+    void uploadQueue();
+    void setQueueStatusComplete(QString const &filePath);
+    void setQueueStatusFailed(QString const &filePath);
+    void resumeQueue();
+    void stopQueue();
+    void resetQueueStatus();
+
     void addFolder(QString const &folderPath);
-    void addFolders();
+    void addFolderRequest();
     void removeFolder();
     void clearFolders();
+    void scanFolder();
+    void scanTxtFiles(QString const &folderPath);
+
+    /* Album methods */
     void createAlbum(QString const &name, QString const &desc);
     void linkExistingAlbum(QString const &id);
     void showCreateAlbumDialog();
-    void uploadQueue();
-    void scaleImage(QString const &filePath);
+    void displayAlbumName(QString const &id, QString const &name);
+    QString loadUsedAlbum(QString const &key);
+    QJsonArray openFile(const QString &path);
+    QStringList toStringList(QJsonArray &array);
+
+    /* Scale image */
+    int scaleImage(QString const &filePath); //return size of scaled image
     void scaleImages(QDir &dir);
 
-    void scanFolder();
+    /* Timer */
     void queueTimerInit();
     void queueTimerStart();
     void queueTimerStop();
@@ -131,72 +182,72 @@ private slots:
     void folderTimerStop();
     void saveTimerInit();
 
-    void setQueueStatusComplete(QString const &filePath);
-    void setQueueStatusFailed(QString const &filePath);
-    void syncSettings();
-    void showEmailTemplate();
-    void showSMSTemplate();
-    void resumeQueue();
-    void stopQueue();
-    void resetQueueStatus();
-
-    void googleLogIn();
-    void googleLogOut();
-    void deleteAllObjects();
-    void disableCreateAlbumBtn();
-    void enableCreateAlbumBtn();
-    void disableLogInBtn();
-    void enableLogInBtn();
-    void disableLogOutBtn();
-    void enableLogOutBtn();
-    void displayAlbumName(QString const &id, QString const &name);
+    /* QR Code */
     void downloadQR(QString const &url="www.google.com");
     void saveQR(QString const &location);
     void prepQrLocation();
-    void showProgressBar();
-    void hideProgressBar();
+
 
     /* Email */
+    void showEmailTemplate();
     void addEmailQueue();
     void removeEmailQueue();
     void clearEmailQueue();
-//    void exportEmailLog();
     void importToEmailModel(const QString &emailPath);
-    void emailGuests();
+    void initializeThreadEmail();
     void selectFileToEmail();
-    void addEmailRow();
-    bool sendSMTP(QString const &sender,
-                  QString const &receiver,
-                  QString const &sub,
-                  QString const &body,
-                  QStringList paths);
+    void addUserInputEmailQueue();
+    void cancelUserInputEmailQueue();
+    void updateEmailView(int row);
+//    void exportEmailLog();
+
 
     /* SMS */
+    void showSMSTemplate();
     void addSMSQueue();
-    void selectSMSFile();
-    void addSMSRow();
+    void selectFileToSMS();
+    void addUserInputSMSQueue();
+    void cancelUserInputSMSQueue();
     void removeSMSQueue();
     void clearSMSQueue();
     void importToSMSModel(const QString &smsPath);
-    void smsGuests();
+    void initializeThreadSMS();
+    void updateSMSView(int row);
 //    void exportSMSLog();
-    bool sendSMTPsms( QString const &receiver,
-                      QString const &guest_num,
-                      QString const &body,
-                      QStringList paths);
 
-    void showErrMsg();
+
+    /* Log In - Log Out */
+    void googleLogIn();
+    void googleLogOut();
+
+    /* Enable Buttons */
+    void enableCreateAlbumBtn();
+    void enableLogInBtn();
+    void enableLogOutBtn();
     void enableResume();
     void enableStop();
+    void enableAddButtons();
+
+    /* Disable Button */
+    void disableCreateAlbumBtn();
+    void disableLogInBtn();
+    void disableLogOutBtn();
     void disableResume();
     void disableStop();
-    void enableAddButtons();
     void disableAddButtons();
-    void scanDirectory(QString const &path);
 
-    QString loadUsedAlbum(QString const &key);
-    QJsonArray openFile(const QString &path);
-    QStringList toStringList(QJsonArray &array);
+    /* Display */
+    void showErrMsg();
+
+    /* Others */
+    void syncSettings();
+    void deleteAllObjects();
+    int getTotalSize(QStringList &filePaths);
+    void startThread();
+    void showThreadDone();
+    void showProgressBar();
+    void hideProgressBar();
+    void checkTableStatus();
 
 public slots:
     QIcon colorIcon(const QString &path, const QColor &color);
@@ -212,18 +263,17 @@ private:
     QTimer * folderTimer = nullptr;
     QTimer * saveTimer = nullptr ;
     QTimer elapsedTime;
-//    QStringList uploadedList;
-//    QJsonArray uploadedListJson;
 
     QMap<QString,int> uploadFailedList;
     bool isReady = true;
     EmailTemplateDialog * emailDialog = nullptr;
     SMSTemplateDialog  * smsDialog = nullptr;
-    QFileSystemWatcher * watcher = nullptr;
+    QFileSystemWatcher  watcher;
 
-    QThread* thread = nullptr;
-    Worker* worker = nullptr;
-    bool isDone = true;
+    QThread *thread_email = nullptr;
+    QThread *thread_sms = nullptr;
+
+
     QString const SMTP_user = "info.enchanted.oc@gmail.com";
     QString const SMTP_pass = "PixylBoys$2020";
     QMap<QString,QString> carrier_map;
@@ -236,11 +286,12 @@ private:
     QSettings *settings = new QSettings("Pixyl", "PixylPush");
 
     DBmanager *m_db = nullptr;
+    Worker *worker;
+    EmailWorker *email_worker = nullptr;
+    SMSWorker *sms_worker = nullptr;
+    QPropertyAnimation *progressBarAnimate = nullptr;
 
 };
-
-
-
 
 
 #endif // MAINWINDOW_H

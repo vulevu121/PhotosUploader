@@ -10,7 +10,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->progressBar->setRange(0,100);
     ui->progressBar->hide();
     progressBarAnimate = new QPropertyAnimation (ui->progressBar,"value");
-    progressBarAnimate->setDuration(10000);
+    progressBarAnimate->setDuration(50000);
     progressBarAnimate->setStartValue(0);
     progressBarAnimate->setEndValue(100);
 
@@ -76,8 +76,6 @@ MainWindow::MainWindow(QWidget *parent) :
     /* disable some options */
     disableLogOutBtn();
     disableCreateAlbumBtn();
-
-
 
 
     /* Start scan on start up option */
@@ -1393,7 +1391,6 @@ bool SMSWorker::sendSMTP( QString const &receiver,
         paths[i] = pic.path()+"/1200px/"+pic.fileName();
         img_tag.append(QString("<img src='cid:%1'/>").arg(pic.fileName()));
     }
-    qDebug() << temp_body;
 
     html.setHtml(temp_body + img_tag);
 

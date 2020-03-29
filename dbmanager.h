@@ -14,10 +14,12 @@ class DBmanager : public QObject
 {
     Q_OBJECT
 public:
-    explicit DBmanager(QObject *parent = nullptr);
-    DBmanager();
+    DBmanager(QString const &connectionName);
+    ~DBmanager();
 
 public slots:
+    void closeConnection(QString const &connectionName);
+
     /* photo */
     void createPhotoTable();
     void connectPhotoTable();
