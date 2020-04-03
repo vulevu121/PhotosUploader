@@ -238,6 +238,14 @@ private slots:
 
     /* Display */
     void showErrMsg();
+    bool promptLoadNewDatabase();
+
+    /* Database */
+    QString getDatabasePath();
+    bool saveDatabasePath(QString const &filePath);
+    void initializeAllTableView();
+    void check4ExistingDatabase(QDir &folder);
+
 
     /* Others */
     void syncSettings();

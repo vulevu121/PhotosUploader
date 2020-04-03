@@ -14,14 +14,17 @@ class DBmanager : public QObject
 {
     Q_OBJECT
 public:
-    DBmanager(QString const &connectionName);
+    DBmanager(QString const &connectionName, QString const &db_path = "");
     ~DBmanager();
 
 public slots:
     void closeConnection(QString const &connectionName);
+    void setDatabasePath(QString const &filePath);
+    void initializeAllTable();
+    int getMaxRowCount();
 
     /* photo */
-    void createPhotoTable();
+    void initializePhotoTable();
     void connectPhotoTable();
     void addPhoto(QString const &filename,
                   QString const &album,
@@ -37,7 +40,7 @@ public slots:
     QSqlTableModel *getPhotoTable();
 
     /* watched folder */
-    void createWatchedTable();
+    void initializeWatchedTable();
     void connectWatchedTable();
     void addWatched(QString const &folderName,
                     QString const &status,
@@ -52,7 +55,7 @@ public slots:
     QSqlTableModel *getWatchedTable();
 
     /* email */
-    void createEmailTable();
+    void initializeEmailTable();
     void connectEmailTable();
     void clearEmail();
     void removeEmail(int row);
@@ -68,7 +71,7 @@ public slots:
 
 
     /* sms */
-    void createSmsTable();
+    void initializeSmsTable();
     void connectSMSTable();
     void addSMS(QString const &phone,
                   QString const &carrier,
@@ -95,6 +98,7 @@ private:
 signals:
     void finished(); // Connect signal to refresh view
     void showMessage(QString const &msg);
+    void initAllTableDone();
 };
 
 #endif // DBMANAGER_H

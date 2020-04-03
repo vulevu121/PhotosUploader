@@ -10,7 +10,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->progressBar->setRange(0,100);
     ui->progressBar->hide();
     progressBarAnimate = new QPropertyAnimation (ui->progressBar,"value");
-    progressBarAnimate->setDuration(10000);
+    progressBarAnimate->setDuration(50000);
     progressBarAnimate->setStartValue(0);
     progressBarAnimate->setEndValue(100);
 
@@ -21,24 +21,15 @@ MainWindow::MainWindow(QWidget *parent) :
     settings.sync();
     connect(settingsDialog, SIGNAL(settingsSaved()), this, SLOT(syncSettings()));
 
+    QString db_path = getDatabasePath();
 
-    m_db = new DBmanager("main_connection");
-
-    ui->queueTableView->setModel(m_db->getPhotoTable());
-    ui->queueTableView->resizeColumnsToContents();
-    ui->queueTableView->show();
-
-    ui->watchTableView->setModel(m_db->getWatchedTable());
-    ui->watchTableView->resizeColumnsToContents();
-    ui->watchTableView->show();
-
-    ui->emailTableView->setModel(m_db->getEmailTable());
-    ui->emailTableView->resizeColumnsToContents();
-    ui->emailTableView->show();
-
-    ui->smsTableView->setModel(m_db->getSMSTable());
-    ui->smsTableView->resizeColumnsToContents();
-    ui->smsTableView->show();
+    if(!db_path.isEmpty()){
+        m_db = new DBmanager("main_connection",db_path);
+        initializeAllTableView();
+        connect(m_db,SIGNAL(showMessage(QString const &)),ui->statusBar,SLOT(showMessage(QString const &)));
+    }else{
+        ui->statusBar->showMessage("No data base saved in registry");
+    }
 
     connect(ui->actionResume, SIGNAL(triggered()), this, SLOT(showErrMsg()));
     connect(ui->actionStop, SIGNAL(triggered()), this, SLOT(showErrMsg()));
@@ -61,7 +52,6 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->clearSmsButton, SIGNAL(clicked()), this, SLOT(clearSMSQueue()));
 
 
-
     connect(ui->actionCreateAlbum, SIGNAL(triggered()), this, SLOT(showCreateAlbumDialog()));
     connect(ui->actionLogIn,SIGNAL(triggered()),this,SLOT(googleLogIn()));
     connect(ui->actionLogOut,SIGNAL(triggered()),this,SLOT(googleLogOut()));
@@ -70,14 +60,11 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->actionEmail, SIGNAL(triggered()), this, SLOT(showEmailTemplate()));
     connect(ui->actionSMS, SIGNAL(triggered()), this, SLOT(showSMSTemplate()));
 
-    connect(m_db,SIGNAL(showMessage(QString const &)),ui->statusBar,SLOT(showMessage(QString const &)));
 
 
     /* disable some options */
     disableLogOutBtn();
     disableCreateAlbumBtn();
-
-
 
 
     /* Start scan on start up option */
@@ -110,6 +97,11 @@ MainWindow::MainWindow(QWidget *parent) :
 /************** Progress Bar ********************/
 void MainWindow::showProgressBar(){
     ui->progressBar->show();
+    int duration = 5;
+    if(m_db != nullptr){
+        duration = (m_db->getMaxRowCount()*settings->value("scanningInterval",5).toInt());
+    }
+    progressBarAnimate->setDuration(duration * 1000); // convert to ms
     progressBarAnimate->start();
 }
 
@@ -118,6 +110,8 @@ void MainWindow::hideProgressBar(){
     progressBarAnimate->stop();
 }
 /*********************** END ********************/
+
+/**************** MESSAGE BOX ********************/
 
 void MainWindow::showErrMsg(){
     if(gphoto == nullptr){
@@ -132,6 +126,29 @@ void MainWindow::showErrMsg(){
         }
 }
 
+bool MainWindow::promptLoadNewDatabase(){
+    msgBx.setIcon(QMessageBox::Question);
+    msgBx.setText("Database found.");
+    msgBx.setInformativeText(" All tables will reload. Do you want to load database?");
+    msgBx.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+    msgBx.setDefaultButton(QMessageBox::No);
+
+    bool answ = false;
+    int ret = msgBx.exec();
+
+    switch (ret) {
+      case QMessageBox::Yes:
+          answ = true;
+          break;
+      case QMessageBox::No:
+          break;
+      default:
+          // should never be reached
+          break;
+    }
+    return answ;
+}
+/*********************** END ********************/
 
 void MainWindow::disableCreateAlbumBtn(){
     ui->actionCreateAlbum->setEnabled(false);
@@ -365,7 +382,11 @@ void MainWindow::resumeQueue(){
         ui->statusBar->showMessage("Scanning resumed");
         ui->actionResume->setIcon(colorIcon(":/icon/resume", QColor(0, 255, 0)));
         uploadQueue();
+
+        /* progress bar */
         showProgressBar();
+
+
      }else
         qDebug() << "Unable to resume scan. Timer is not initialized";
 }
@@ -377,6 +398,7 @@ void MainWindow::stopQueue(){
         ui->statusBar->showMessage("Scanning stopped");
         ui->actionResume->setIcon(colorIcon(":/icon/resume", QColor(255, 255, 255)));
         hideProgressBar();
+
     }else
         qDebug() << "Unable to stop scan. Timer is not initialized";
 }
@@ -489,20 +511,10 @@ void MainWindow::resetQueueStatus(){
 /************************** Folder **************************************/
 void MainWindow::addFolderRequest(){
     QFileDialog *fileDialog = new QFileDialog(this);
-    QString folderPath = fileDialog->getExistingDirectory(this, tr("Select Event Folder"), "");
+    QString folderPath = fileDialog->getExistingDirectory(this, tr("Select Event Folder"));
     if(!folderPath.isEmpty()){
         QDir folder (folderPath);
 
-        /* Use this watcher to catch changes to the folders added to watch model
-        * Triggered when SMS.txt, Email.txt change or when file is added/modified in the provided directory*/
-        if(folder.exists("SMS.txt")){
-            watcher.addPath(folderPath + "/SMS.txt");
-            scanTxtFiles(folderPath + "/SMS.txt");
-        }
-        if(folder.exists("Email.txt")){
-            watcher.addPath(folderPath + "/Email.txt");
-            scanTxtFiles(folderPath + "/Email.txt");
-        }
         watcher.disconnect();
         connect(&watcher,&QFileSystemWatcher::directoryChanged,this,&MainWindow::scanFolder);
         connect(&watcher,&QFileSystemWatcher::fileChanged,this,&MainWindow::scanTxtFiles);
@@ -514,9 +526,24 @@ void MainWindow::addFolderRequest(){
         QDir camera (folderPath + "/Camera");
 
         if(print.exists() && camera.exists()){
-            /* add the folder and settings */
+            /* check for db file */
+            check4ExistingDatabase(folder);
+
+            /* add the folders to watched */
             addFolder(print.path());
             addFolder(camera.path());
+
+
+            /* Use this watcher to catch changes to the folders added to watch model
+            * Triggered when SMS.txt, Email.txt change or when file is added/modified in the provided directory*/
+            if(folder.exists("SMS.txt")){
+                watcher.addPath(folderPath + "/SMS.txt");
+                scanTxtFiles(folderPath + "/SMS.txt");
+            }
+            if(folder.exists("Email.txt")){
+                watcher.addPath(folderPath + "/Email.txt");
+                scanTxtFiles(folderPath + "/Email.txt");
+            }
 
             /* Emit signal folder is added (for saveQR function. MUST BE emited after downloadQR above) */
             emit folderAdded(folderPath);
@@ -525,7 +552,6 @@ void MainWindow::addFolderRequest(){
             addFolder(folderPath);
         }
     }
-
 }
 
 
@@ -542,9 +568,6 @@ void MainWindow::addFolder(QString const &folderPath) {
         msgBx.exec();
         /* else, "1200px" dir does not exists, create it, scale all photos in the current dir and place them in there */
         }else{
-//                if(dir.mkdir("1200px")){
-//                    qDebug() << "1200px folder is created in" << dir.path();
-//                }
                 /* Scale all images in this folder and put them in "1200px", "1200px" folder
                    is automatically created if not exists */
                 scaleImages(dir);
@@ -554,18 +577,19 @@ void MainWindow::addFolder(QString const &folderPath) {
                 int num_files = dir1200.entryInfoList(QStringList() << "*.jpg" << "*.JPG",QDir::Files).length();
                 QFileInfo fileInfo(folderPath);
                 QString now = QDateTime::currentDateTime().toString(timeFormat);
-
-                m_db->addWatched(dir.dirName(),
-                                 "Queue",
-                                  num_files,
-                                  now,
-                                  fileInfo.lastModified().toString(timeFormat),
-                                  folderPath);
-                ui->watchTableView->resizeColumnsToContents();
-                /* scan the added folder */
-                scanFolder();
-                qDebug() << "Dir:" << watcher.directories();
-                qDebug() << "File:" << watcher.files();
+                if(m_db != nullptr){
+                    m_db->addWatched(dir.dirName(),
+                                     "Queue",
+                                      num_files,
+                                      now,
+                                      fileInfo.lastModified().toString(timeFormat),
+                                      folderPath);
+                    ui->watchTableView->resizeColumnsToContents();
+                    /* scan the added folder */
+                    scanFolder();
+    //                qDebug() << "Dir:" << watcher.directories();
+    //                qDebug() << "File:" << watcher.files();
+                }
     }
 }
 
@@ -602,8 +626,7 @@ void MainWindow::scanTxtFiles(QString const &filePath){
     if(info.fileName() == "SMS.txt"){
         qDebug() << "Scanning txt files:" << filePath;
         importToSMSModel(filePath);
-    }
-    if(info.fileName() == "Email.txt"){
+    }else if(info.fileName() == "Email.txt"){
         qDebug() << "Scanning txt files:" << filePath;
         importToEmailModel(filePath);
     }
@@ -651,6 +674,8 @@ void MainWindow::scanFolder(){
 /* scale image to 1200px, save to "1200px" folder in the current directory
  If file exists, do nothing */
 int MainWindow::scaleImage(QString const &filePath){
+    QThread::msleep(100); // Wait a bit for the file to completely saved to the directory before scalling it */
+
     int size = 0;
     QFileInfo info(filePath);
 
@@ -867,13 +892,15 @@ void MainWindow::importToEmailModel(const QString &emailPath){
             QJsonArray pathsArray = jsonItem["PhotoPaths"].toArray();
             QStringList paths = toStringList(pathsArray);
             QString now = QDateTime::currentDateTime().toString(timeFormat);
-
-            m_db->addEmail(jsonItem["Email"].toString(),
-                            "Queue",
-                            paths.count(),
-                            now,
-                            paths.join(","));
-            ui->emailTableView->resizeColumnsToContents();
+            if(m_db != nullptr){
+                m_db->addEmail(jsonItem["Email"].toString(),
+                                "Queue",
+                                paths.count(),
+                                now,
+                                paths.join(","));
+                ui->emailTableView->resizeColumnsToContents();
+            }else
+                ui->statusBar->showMessage("Database is not initialized");
          }
     }else
         qDebug() << "Email.txt is empty";
@@ -980,29 +1007,21 @@ void MainWindow::importToSMSModel(const QString &smsPath){
             QJsonArray pathsArray = jsonItem["PhotoPaths"].toArray();
             QStringList paths = toStringList(pathsArray);
             QString now = QDateTime::currentDateTime().toString(timeFormat);
-
-            m_db->addSMS(jsonItem["Phone"].toString(),
-                        jsonItem["Carrier"].toString(),
-                        "Queue",
-                        paths.count(),
-                        now,
-                        paths.join(","));
-            ui->smsTableView->resizeColumnsToContents();
+            if(m_db != nullptr){
+                m_db->addSMS(jsonItem["Phone"].toString(),
+                            jsonItem["Carrier"].toString(),
+                            "Queue",
+                            paths.count(),
+                            now,
+                            paths.join(","));
+                ui->smsTableView->resizeColumnsToContents();
+            }else
+                ui->statusBar->showMessage("Database is not initialized");
         }
     }else
         qDebug() << "SMS.txt is epmty OR the json format is incorrect";
 }
 
-
-//void MainWindow::SMSGuests(){
-//    sms_worker = new SMSWorker(m_db,gphoto,SMTP_user,SMTP_pass, carrier_map);
-//    sms_worker->moveToThread(&thread_sms);
-
-//    connect(&thread_sms, SIGNAL(finished()), &thread_sms,SLOT(quit()));
-//    connect(&thread_sms, SIGNAL(started()), sms_worker,SLOT(processQueue()));
-//    connect(sms_worker,SIGNAL(finished(int)),this,SLOT(updateSMSView(int)));
-//    thread_sms.start();
-//}
 
 void MainWindow::initializeThreadSMS(){
     thread_sms = new QThread();
@@ -1118,6 +1137,79 @@ int MainWindow::getTotalSize(QStringList &filePaths){
         result = result + scaleImage(filePath);
     }
     return result;
+}
+
+/************************** END **************************************/
+
+/************************ DATA BASE Initialization ******************/
+
+QString MainWindow::getDatabasePath(){
+    QString filePath;
+    if(settings!= nullptr)
+        filePath = settings->value("lastUsedDatabase","").toString();
+
+    if(filePath.isEmpty())
+        qDebug() << "No Data Base found in registry";
+
+    return filePath;
+}
+
+bool MainWindow::saveDatabasePath(QString const &filePath){
+    bool result = false;
+    if(settings!=nullptr){
+        settings->setValue("lastUsedDatabase",filePath);
+        qDebug() << "Save database path successful!";
+        result = true;
+        settings->sync();
+    }
+    return result;
+}
+
+
+void MainWindow::check4ExistingDatabase(QDir &folder){
+    /* if data base path is empty, check for existing db file in current directory*/
+    if(folder.exists("db.sqlite")){ /* db exisits, all table exist */
+        bool resp = promptLoadNewDatabase();
+        qDebug() << "Response:" << resp;
+        if(resp){
+            QString db_path = folder.absoluteFilePath("db.sqlite");
+            m_db = new DBmanager("main_connection",db_path);
+            initializeAllTableView();
+
+            saveDatabasePath(db_path);
+
+            ui->statusBar->showMessage("Data base is loaded");
+        }else{
+            ui->statusBar->showMessage("Data base is not loaded");
+        }
+    }else{ /* create and initialize new db */
+        QString db_path = folder.absolutePath() + "/db.sqlite";
+        m_db = new DBmanager("main_connection",db_path);
+        initializeAllTableView();
+        saveDatabasePath(db_path);
+
+        ui->statusBar->showMessage("Data base is loaded");
+    }
+}
+
+void MainWindow::initializeAllTableView(){
+    ui->queueTableView->setModel(m_db->getPhotoTable());
+    ui->queueTableView->resizeColumnsToContents();
+    ui->queueTableView->show();
+
+    ui->watchTableView->setModel(m_db->getWatchedTable());
+    ui->watchTableView->resizeColumnsToContents();
+    ui->watchTableView->show();
+
+    ui->emailTableView->setModel(m_db->getEmailTable());
+    ui->emailTableView->resizeColumnsToContents();
+    ui->emailTableView->show();
+
+    ui->smsTableView->setModel(m_db->getSMSTable());
+    ui->smsTableView->resizeColumnsToContents();
+    ui->smsTableView->show();
+
+    ui->queueTableView->resizeColumnsToContents();
 }
 
 /************************** END **************************************/
@@ -1393,7 +1485,6 @@ bool SMSWorker::sendSMTP( QString const &receiver,
         paths[i] = pic.path()+"/1200px/"+pic.fileName();
         img_tag.append(QString("<img src='cid:%1'/>").arg(pic.fileName()));
     }
-    qDebug() << temp_body;
 
     html.setHtml(temp_body + img_tag);
 

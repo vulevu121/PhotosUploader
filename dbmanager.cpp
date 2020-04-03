@@ -1,47 +1,64 @@
 #include "dbmanager.h"
 #include <QDebug>
 
-DBmanager::DBmanager(QString const &connectionName)
+DBmanager::DBmanager(QString const &connectionName, QString const &db_path)
 {
-    qDebug() << connectionName;
+//    qDebug() << connectionName;
 
     if(m_db.contains(connectionName)){
         m_db = QSqlDatabase::database(connectionName);
     }
     else{
-        m_db = QSqlDatabase::addDatabase("QSQLITE",connectionName);
+        qDebug() << connectionName;
+        m_db = QSqlDatabase::addDatabase("QSQLITE");
     }
 
-    m_db.setDatabaseName("C:/Users/khuon/Documents/PixylPushLog/db.sqlite");
+    if(db_path.isEmpty())
+        qDebug() << "Error. Data Base file path is empty";
+    else
+        m_db.setDatabaseName(db_path);
+
+    initializeAllTable();
+
+}
 
 
+void DBmanager::closeConnection(QString const &connectionName){
+//    m_db.close();
+//    m_db.removeDatabase(connectionName);
+}
+
+int DBmanager::getMaxRowCount(){
+    int max = 0;
+    if(max < photoTable->rowCount())
+        max = photoTable->rowCount();
+    if(max < emailTable->rowCount())
+        max = emailTable->rowCount();
+    if(max < smsTable->rowCount())
+        max = smsTable->rowCount();
+    return max;
+}
+
+void DBmanager::setDatabasePath(QString const &filePath){
+    m_db.setDatabaseName(filePath);
+    initializeAllTable();
+}
+
+void DBmanager::initializeAllTable(){
     if (!m_db.open()){
         qDebug() << "Error: connection with database fail";
     }
     else{
         qDebug() << "Database: connection ok";
-        createSmsTable();
-        createEmailTable();
-        createPhotoTable();
-        createWatchedTable();
+        initializeSmsTable();
+        initializeEmailTable();
+        initializePhotoTable();
+        initializeWatchedTable();
     }
-
-
-
 }
-
-DBmanager::~DBmanager(){
-
-}
-
-void DBmanager::closeConnection(QString const &connectionName){
-    m_db.close();
-    m_db.removeDatabase(connectionName);
-}
-
 
 /************************** Photo Table **************************************/
-void DBmanager::createPhotoTable(){
+void DBmanager::initializePhotoTable(){
     QSqlQuery query;
 
     if(m_db.isOpen()){
@@ -49,7 +66,7 @@ void DBmanager::createPhotoTable(){
 //            qDebug() << "Photo table exists.";
             connectPhotoTable();
         }else{
-            qDebug() << "create Photo Table  in db";
+            qDebug() << "create Photo Table in db";
             if(!query.exec("create table photo (filename varchar(255),"
                                                "album varchar(20),"
                                                "status varchar(20),"
@@ -76,7 +93,7 @@ void DBmanager::connectPhotoTable(){
         photoTable->setHeaderData(4,Qt::Horizontal, QObject::tr("Date Modified"));
         photoTable->setHeaderData(5,Qt::Horizontal, QObject::tr("Path"));
 
-        qDebug() << "Photo table is linked to sql table model";
+        qDebug() << "Photo table is linked to sql database";
     }
 }
 void DBmanager::addPhoto(QString const &filename,
@@ -108,7 +125,7 @@ void DBmanager::addPhoto(QString const &filename,
 }
 void DBmanager::clearPhoto(){
     if(photoTable == nullptr){
-        qDebug() << " Photo table pointer is NULL";
+        qDebug() << "Photo table pointer is NULL";
     }else{
         photoTable->removeRows(0,photoTable->rowCount());
         photoTable->submitAll();
@@ -117,7 +134,7 @@ void DBmanager::clearPhoto(){
 
 void DBmanager::removePhoto(int row){
     if(photoTable == nullptr){
-        qDebug() << " Photo table pointer is NULL";
+        qDebug() << "Photo table pointer is NULL";
     }else{
         photoTable->removeRow(row);
         photoTable->submitAll();
@@ -142,21 +159,6 @@ void DBmanager::setAlbumName(int row, QString const &album){
 }
 
 void DBmanager::setPhotoStatusByPath(QString const &path, QString const &status){
-//    qDebug() << "Set status photo by path...";
-//    QSqlTableModel model (this,m_db);
-//    model.setTable("photo");
-//    model.setEditStrategy(QSqlTableModel::OnManualSubmit);
-//    /* remove the 1200px from the file path */
-//    QString filter = QString("path = \"%1\"").arg(path);
-//    filter.replace("/1200px","");
-//    model.setFilter(filter);
-//    model.select();
-//    if(model.rowCount()>0){
-//        model.setData(photoTable->index(0,model.fieldIndex("status")),status);
-//        model.submitAll();
-//    }
-//    emit finished();
-
     /* remove the 1200px from the file path */
     QString searchKey = path;
     searchKey.replace("/1200px","");
@@ -180,7 +182,7 @@ QSqlTableModel *DBmanager::getPhotoTable(){
 /*********************************** END **************************************/
 
 /************************** Watched folder Table ******************************/
-void DBmanager::createWatchedTable(){
+void DBmanager::initializeWatchedTable(){
     QSqlQuery query;
     if(m_db.isOpen()){
         if(m_db.tables().contains("watched")){
@@ -196,8 +198,10 @@ void DBmanager::createWatchedTable(){
                                                   "path varchar(255),"
                                                   "primary key(folder,num_file,path))"))
                 qDebug() << query.lastError().text();
-             else
+             else{
                 connectWatchedTable();
+                emit initAllTableDone();  //This table is initialized last. Emit Done signal when it is doen
+            }
         }
     }
 }
@@ -225,7 +229,7 @@ void DBmanager::addWatched(QString const &folderName,
                             QString const &dateModified,
                             QString const &path){
     if(watchedTable == nullptr){
-        qDebug() << " Watched table pointer is NULL";
+        qDebug() << "Watched table pointer is NULL";
     }else{
         /* Insert into table, Unique Key prevents duplicate */
         int row = watchedTable->rowCount();
@@ -289,7 +293,7 @@ QSqlTableModel *DBmanager::getWatchedTable(){
 
 /***************************** SMS Table **************************************/
 
-void DBmanager::createSmsTable(){
+void DBmanager::initializeSmsTable(){
     QSqlQuery query;
 
     if(m_db.isOpen()){
@@ -297,7 +301,8 @@ void DBmanager::createSmsTable(){
 //            qDebug() << "SMS table exists.";
             connectSMSTable();
         }else{
-            qDebug() << "create SMS Table  in db";
+//            qDebug() << "db is open:" << m_db.isOpen();
+            qDebug() << "create SMS Table in db";
             if(!query.exec("create table sms (phone varchar(255),"
                                              "carrier varchar(20),"
                                              "status varchar(20),"
@@ -326,7 +331,7 @@ void DBmanager::connectSMSTable()
         smsTable->setHeaderData(4,Qt::Horizontal, QObject::tr("Date Added"));
         smsTable->setHeaderData(5,Qt::Horizontal, QObject::tr("Path"));
 
-        qDebug() << "SMS table is linked to sql table model";
+        qDebug() << "SMS table is linked to sql database";
     }
 }
 
@@ -337,8 +342,11 @@ void DBmanager::addSMS(QString const &phone,
                        QString const &dateAdded,
                        QString const &path){
 
+
     if(smsTable == nullptr){
         qDebug() << "SMS table pointer is NULL";
+   }else if(m_db.databaseName().isEmpty()){
+        qDebug() << "Data base name is EMPTY";
     }else{
         /* Have to do a more complex search query here */
         if(!smsExists(phone,carrier,path)){
@@ -363,9 +371,11 @@ bool DBmanager::smsExists(QString const &phone,
                            QString const &carrier,
                            QString const &path){
     QModelIndexList list =  smsTable->match(smsTable->index(0,smsTable->fieldIndex("phone")),Qt::DisplayRole,phone,-1);
-    foreach(QModelIndex i, list){
-        if(smsTable->record(i.row()).value("carrier").toString() == carrier && smsTable->record(i.row()).value("path").toString() == path){
-            return true;
+    if(list.count() >0){
+        foreach(QModelIndex i, list){
+            if(smsTable->record(i.row()).value("carrier").toString() == carrier && smsTable->record(i.row()).value("path").toString() == path){
+                return true;
+            }
         }
     }
     return false;
@@ -411,7 +421,7 @@ QSqlTableModel *DBmanager::getSMSTable(){
 
 /************************** Email Table **************************************/
 
-void DBmanager::createEmailTable(){
+void DBmanager::initializeEmailTable(){
     QSqlQuery query;
 
     if(m_db.isOpen()){
@@ -448,7 +458,7 @@ void DBmanager::connectEmailTable()
         emailTable->setHeaderData(2,Qt::Horizontal, QObject::tr("No. File"));
         emailTable->setHeaderData(3,Qt::Horizontal, QObject::tr("Date Added"));
         emailTable->setHeaderData(4,Qt::Horizontal, QObject::tr("Path"));
-        qDebug() << "Email table is linked to sql table model";
+        qDebug() << "Email table is linked to sql database";
     }
 }
 
@@ -461,6 +471,8 @@ void DBmanager::addEmail(QString const &email,
 
     if(emailTable == nullptr){
         qDebug() << "Email table pointer is NULL";
+    }else if(m_db.databaseName().isEmpty()){
+         qDebug() << "Data base name is EMPTY";
     }else{
         if(!emailExists(email,path)){
             int row = emailTable->rowCount();
@@ -481,9 +493,11 @@ void DBmanager::addEmail(QString const &email,
 bool DBmanager::emailExists(QString const &email,
                            QString const &path){
     QModelIndexList list =  emailTable->match(emailTable->index(0,emailTable->fieldIndex("email")),Qt::DisplayRole,email,-1);
-    foreach(QModelIndex i, list){
-        if(emailTable->record(i.row()).value("path").toString() == path){
-            return true;
+    if(list.count() >0){
+        foreach(QModelIndex i, list){
+            if(emailTable->record(i.row()).value("path").toString() == path){
+                return true;
+            }
         }
     }
     return false;
@@ -525,3 +539,6 @@ QSqlTableModel *DBmanager::getEmailTable(){
 
 }
 /************************** END **************************************/
+DBmanager::~DBmanager(){
+
+}
