@@ -10,7 +10,6 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->progressBar->setRange(0,100);
     ui->progressBar->hide();
     progressBarAnimate = new QPropertyAnimation (ui->progressBar,"value");
-    progressBarAnimate->setDuration(50000);
     progressBarAnimate->setStartValue(0);
     progressBarAnimate->setEndValue(100);
 
@@ -23,10 +22,16 @@ MainWindow::MainWindow(QWidget *parent) :
 
     QString db_path = getDatabasePath();
 
-    if(!db_path.isEmpty()){
-        m_db = new DBmanager("main_connection",db_path);
-        initializeAllTableView();
-        connect(m_db,SIGNAL(showMessage(QString const &)),ui->statusBar,SLOT(showMessage(QString const &)));
+    if(!db_path.isEmpty()){ //if db_path is empty, registry does not have last used db path
+        QFileInfo db_info(db_path);
+        if(db_info.exists()){ // if file does exisit, connect to it
+            m_db = new DBmanager("main_connection",db_path);
+            initializeAllTableView();
+            connect(m_db,SIGNAL(showMessage(QString const &)),ui->statusBar,SLOT(showMessage(QString const &)));
+        }else{ // if not exists, the db has been deleted or moved, do nothing
+            ui->statusBar->showMessage("Last used db file can not be found. Do nothing");
+        }
+
     }else{
         ui->statusBar->showMessage("No data base saved in registry");
     }
@@ -74,7 +79,6 @@ MainWindow::MainWindow(QWidget *parent) :
 
     /* Initialize the scan timers */
     queueTimerInit();
-//    folderTimerInit();
 //    saveTimerInit();
 
     emailDialog = new EmailTemplateDialog(this);
@@ -90,24 +94,27 @@ MainWindow::MainWindow(QWidget *parent) :
 
     qRegisterMetaType<EmailWorker*>("EmailWorker*");
     qRegisterMetaType<SMSWorker*>("SMSWorker*");
+    qRegisterMetaType<Worker*>("Worker*");
 
 }
 
 
 /************** Progress Bar ********************/
 void MainWindow::showProgressBar(){
-    ui->progressBar->show();
     int duration = 5;
     if(m_db != nullptr){
         duration = (m_db->getMaxRowCount()*settings->value("scanningInterval",5).toInt());
     }
     progressBarAnimate->setDuration(duration * 1000); // convert to ms
     progressBarAnimate->start();
+    ui->progressBar->show();
 }
 
 void MainWindow::hideProgressBar(){
-    ui->progressBar->hide();
     progressBarAnimate->stop();
+    ui->progressBar->setValue(0);
+    ui->progressBar->hide();
+
 }
 /*********************** END ********************/
 
@@ -205,6 +212,7 @@ void MainWindow::disableStop(){
 
 /************************** Log In / Log Out **************************/
 void MainWindow::googleLogIn(){
+    showProgressBar();
 
     /* Initialize google photo */
     gphoto = new GooglePhoto(this);
@@ -220,6 +228,7 @@ void MainWindow::googleLogIn(){
     connect(auth,SIGNAL(authenticated(QString const)),this,SLOT(enableCreateAlbumBtn()));
     connect(auth,SIGNAL(authenticated(QString const)),this,SLOT(enableResume()));
     connect(auth,SIGNAL(authenticated(QString const)),this,SLOT(enableStop()));
+    connect(auth,&GoogleOAuth2::authenticated,this,&MainWindow::hideProgressBar); // hide progress bar after logged in
 
     /* Initialize email & sms workers
     NOTE: MUST be called AFTER gphoto is created*/
@@ -227,8 +236,9 @@ void MainWindow::googleLogIn(){
     initializeThreadEmail();
     /* When thread email finishes, start sms thread */
     connect(thread_email,SIGNAL(finished()),thread_sms,SLOT(start()));
-    connect(thread_sms,SIGNAL(finished()),this,SLOT(showThreadDone()));
 
+    /* Initialize watched folder worker */
+    initializeThreadWatchedFolder();
 
 }
 
@@ -329,18 +339,8 @@ void MainWindow::queueTimerInit(){
     queueTimer = new QTimer(this);
     /* upload photo queue. Run the first time and then connect the timeout signal for the following call */
     connect(queueTimer,SIGNAL(timeout()),this,SLOT(uploadQueue()));
-    connect(queueTimer,SIGNAL(timeout()),this,SLOT(startThread()));
+    connect(queueTimer,SIGNAL(timeout()),this,SLOT(startThreadEmail()));
     connect(queueTimer,SIGNAL(timeout()),this,SLOT(checkTableStatus()));
-}
-void MainWindow::startThread(){
-/* start thread for email and sms */
-/* NOTE: both email and sms threads automatically stop when task is finished */
-    if(thread_email != nullptr){
-//        qDebug() << "Thread Email active..." << thread_email->isRunning();
-//        qDebug() << "Thread SMS active..." << thread_sms->isRunning();
-        if (!thread_email->isRunning())
-            thread_email->start();
-    }
 }
 
 void MainWindow::checkTableStatus(){
@@ -356,29 +356,11 @@ void MainWindow::checkTableStatus(){
         hideProgressBar();
 }
 
-void MainWindow::showThreadDone(){
-//    qDebug() << "Thread SMS finished..." << thread_sms->isFinished();
-}
 
-void MainWindow::folderTimerStart(){
-//    qDebug() << "folder timer start";
-    folderTimer->start(settings->value("scanningInterval", "10").toInt() * 1000); // convert to ms
-}
-
-void MainWindow::folderTimerStop(){
-//    qDebug() << "folder timer stop";
-    folderTimer->stop();
-}
-
-void MainWindow::folderTimerInit(){
-    folderTimer = new QTimer(this);
-    connect(folderTimer,SIGNAL(timeout()),this,SLOT(scanFolder()));
-}
 
 void MainWindow::resumeQueue(){
     if(queueTimer != nullptr){
         queueTimerStart();
-//        folderTimerStart();
         ui->statusBar->showMessage("Scanning resumed");
         ui->actionResume->setIcon(colorIcon(":/icon/resume", QColor(0, 255, 0)));
         uploadQueue();
@@ -394,7 +376,6 @@ void MainWindow::resumeQueue(){
 void MainWindow::stopQueue(){
     if(queueTimer != nullptr){
         queueTimerStop();
-//        folderTimerStop();
         ui->statusBar->showMessage("Scanning stopped");
         ui->actionResume->setIcon(colorIcon(":/icon/resume", QColor(255, 255, 255)));
         hideProgressBar();
@@ -408,45 +389,61 @@ void MainWindow::stopQueue(){
 
 /************************** Queue **************************************/
 void MainWindow::addQueue() {
-   ui->queueTableView->update();
-   /* add a file to queue */
-    QString now = QDateTime::currentDateTime().toString(timeFormat);
-    QFileDialog *fileDialog = new QFileDialog(this);
-    QStringList paths = fileDialog->getOpenFileNames(this, tr("Select folder"), "", tr("Images (*.png *.jpg)"));
-    QString album = gphoto->GetAlbumName();
-    if (paths.count()>0) {
-        foreach(QString path, paths){
-            QFileInfo fileInfo(path);
-            m_db->addPhoto(fileInfo.fileName(),
-                           album,
-                           "Queue",
-                           now,
-                           fileInfo.lastModified().toString(timeFormat),
-                           path);
+    if(m_db!= nullptr){
+       ui->queueTableView->update();
+       /* add a file to queue */
+        QString now = QDateTime::currentDateTime().toString(timeFormat);
+        QFileDialog *fileDialog = new QFileDialog(this);
+        QStringList paths = fileDialog->getOpenFileNames(this, tr("Select folder"), "", tr("Images (*.png *.jpg)"));
+        QString album = gphoto->GetAlbumName();
+        if (paths.count()>0) {
+            foreach(QString path, paths){
+                QFileInfo fileInfo(path);
+                m_db->addPhoto(fileInfo.fileName(),
+                               album,
+                               "Queue",
+                               now,
+                               fileInfo.lastModified().toString(timeFormat),
+                               path);
+            }
+            ui->queueTableView->resizeColumnsToContents();
         }
-        ui->queueTableView->resizeColumnsToContents();
-    }
-    else
-        ui->statusBar->showMessage("No selected files");
+        else
+        {
+            ui->statusBar->showMessage("No selected files");
+        }
+    }else
+        {
+            ui->statusBar->showMessage("No data base is connected. Do nothing");
+        }
 }
 
 
 
 void MainWindow::removeQueue() {
-    QModelIndexList selectedRows = ui->queueTableView->selectionModel()->selectedRows();
-    foreach (QModelIndex index, selectedRows)
-        m_db->removePhoto(index.row());
+    if(m_db!= nullptr){
+        QModelIndexList selectedRows = ui->queueTableView->selectionModel()->selectedRows();
+        foreach (QModelIndex index, selectedRows)
+            m_db->removePhoto(index.row());
 
-    ui->statusBar->showMessage("Queue removed");
+        ui->statusBar->showMessage("Queue removed");
+    }else{
+        ui->statusBar->showMessage("No data base is connected. Do nothing");
+    }
 }
 
 void MainWindow::clearQueue() {
-    m_db->clearPhoto();
-    ui->statusBar->showMessage("Queue cleared");
+    if(m_db!= nullptr){
+        m_db->clearPhoto();
+        ui->statusBar->showMessage("Queue cleared");
+    }else{
+        ui->statusBar->showMessage("No data base is connected. Do nothing");
+    }
+
 }
 
 void MainWindow::uploadQueue(){
-    if(gphoto != nullptr){
+    if(m_db != nullptr){
         /* Iterate through the rows in the model, if status is Queue, upload photo,
           * If status is Completed, pass*/
         QSqlTableModel *model = m_db->getPhotoTable();
@@ -472,7 +469,7 @@ void MainWindow::uploadQueue(){
                  }
              }
         }else
-            qDebug() << "Upload error. Google account not logged in";
+        ui->statusBar->showMessage("No data base is connected. Do nothing");
 }
 
 void MainWindow::setQueueStatusComplete(QString const &filePath){
@@ -516,8 +513,11 @@ void MainWindow::addFolderRequest(){
         QDir folder (folderPath);
 
         watcher.disconnect();
-        connect(&watcher,&QFileSystemWatcher::directoryChanged,this,&MainWindow::scanFolder);
+//        connect(&watcher,&QFileSystemWatcher::directoryChanged,this,&MainWindow::scanFolder);
         connect(&watcher,&QFileSystemWatcher::fileChanged,this,&MainWindow::scanTxtFiles);
+        connect(&watcher,&QFileSystemWatcher::directoryChanged,this,&MainWindow::startThreadWatchedFolder);
+
+
 
         /* if "print" and "camera" folders do not exist in this directory, add the directory
          * to watch model like normal. Else, add both Prints, Camera, import sms and email txt, and download AlbumQR*/
@@ -548,7 +548,7 @@ void MainWindow::addFolderRequest(){
             /* Emit signal folder is added (for saveQR function. MUST BE emited after downloadQR above) */
             emit folderAdded(folderPath);
 
-        }else{
+        }else{ //if no db exists previously, this will crash
             addFolder(folderPath);
         }
     }
@@ -556,28 +556,22 @@ void MainWindow::addFolderRequest(){
 
 
 void MainWindow::addFolder(QString const &folderPath) {
-    /* Add folder to file watcher */
-    watcher.addPath(folderPath);
+    if(m_db != nullptr){
+        /* Add folder to file watcher */
+        watcher.addPath(folderPath);
 
-    /* Add folder to sql model */
-    QDir dir(folderPath);
+        /* Add folder to sql model */
+        QDir dir(folderPath);
 
-    /* User should select the parent directory of the "1200px" only */
-    if(dir.dirName() == "1200px"){
-        msgBx.setText("Please Do Not Select \"1200px\" folder. Select The Parent Directory!");
-        msgBx.exec();
-        /* else, "1200px" dir does not exists, create it, scale all photos in the current dir and place them in there */
-        }else{
-                /* Scale all images in this folder and put them in "1200px", "1200px" folder
-                   is automatically created if not exists */
-                scaleImages(dir);
-
-                /* Get a count of the photos in 1200px. Add current directory to watchModel */
-                QDir dir1200 (dir.absolutePath() + "/1200px");
-                int num_files = dir1200.entryInfoList(QStringList() << "*.jpg" << "*.JPG",QDir::Files).length();
-                QFileInfo fileInfo(folderPath);
-                QString now = QDateTime::currentDateTime().toString(timeFormat);
-                if(m_db != nullptr){
+        /* User should select the parent directory of the "1200px" only */
+        if(dir.dirName() == "1200px"){
+            msgBx.setText("Please Do Not Select \"1200px\" folder. Select The Parent Directory!");
+            msgBx.exec();
+            }else{
+                    /* Get a count of the photos. Add current directory to watchModel */
+                    int num_files = dir.entryInfoList(QStringList() << "*.jpg" << "*.JPG",QDir::Files).length();
+                    QFileInfo fileInfo(folderPath);
+                    QString now = QDateTime::currentDateTime().toString(timeFormat);
                     m_db->addWatched(dir.dirName(),
                                      "Queue",
                                       num_files,
@@ -585,39 +579,50 @@ void MainWindow::addFolder(QString const &folderPath) {
                                       fileInfo.lastModified().toString(timeFormat),
                                       folderPath);
                     ui->watchTableView->resizeColumnsToContents();
+
                     /* scan the added folder */
-                    scanFolder();
-    //                qDebug() << "Dir:" << watcher.directories();
-    //                qDebug() << "File:" << watcher.files();
-                }
+                    startThreadWatchedFolder(); // use worker thread - scaling is done in Worker Thread
+                    showProgressBar(); // does not work right
+            }
+    }else{
+        ui->statusBar->showMessage("No data base is connected. Do nothing");
     }
 }
 
 
 void MainWindow::removeFolder() {
-    QSqlTableModel *model = m_db->getWatchedTable();
-    /* Delete selected row */
-    QModelIndexList selectedRows = ui->watchTableView->selectionModel()->selectedRows();
-    foreach (QModelIndex index, selectedRows){
-            watcher.removePath(model->record(index.row()).value(model->fieldIndex("path")).toString());
-            m_db->removeWatched(index.row());
+    if(m_db!= nullptr){
+        QSqlTableModel *model = m_db->getWatchedTable();
+        /* Delete selected row */
+        QModelIndexList selectedRows = ui->watchTableView->selectionModel()->selectedRows();
+        foreach (QModelIndex index, selectedRows){
+                watcher.removePath(model->record(index.row()).value(model->fieldIndex("path")).toString());
+                m_db->removeWatched(index.row());
+        }
+        qDebug() << "Dir:" << watcher.directories();
+        qDebug() << "File:" << watcher.files();
+        ui->statusBar->showMessage("Folder(s) removed from watchlist");
+    }else{
+        ui->statusBar->showMessage("No data base is connected. Do nothing");
     }
-    qDebug() << "Dir:" << watcher.directories();
-    qDebug() << "File:" << watcher.files();
-    ui->statusBar->showMessage("Folder(s) removed from watchlist");
 }
 
 
 void MainWindow::clearFolders() {
-    QSqlTableModel *model = m_db->getWatchedTable();
-    ui->watchTableView->selectAll();
-    QModelIndexList selectedRows = ui->watchTableView->selectionModel()->selectedRows();
-    foreach (QModelIndex index, selectedRows){
-            watcher.removePath(model->record(index.row()).value(model->fieldIndex("path")).toString());
-            m_db->removeWatched(index.row());
-    }
-    m_db->clearWatched();
-    ui->statusBar->showMessage("Watchlist cleared");
+    if(m_db!= nullptr){
+        QSqlTableModel *model = m_db->getWatchedTable();
+        ui->watchTableView->selectAll();
+        QModelIndexList selectedRows = ui->watchTableView->selectionModel()->selectedRows();
+        foreach (QModelIndex index, selectedRows){
+                watcher.removePath(model->record(index.row()).value(model->fieldIndex("path")).toString());
+                m_db->removeWatched(index.row());
+        }
+        m_db->clearWatched();
+        ui->statusBar->showMessage("Watchlist cleared");
+
+    }else{
+            ui->statusBar->showMessage("No data base is connected. Do nothing");
+        }
 }
 
 void MainWindow::scanTxtFiles(QString const &filePath){
@@ -632,44 +637,49 @@ void MainWindow::scanTxtFiles(QString const &filePath){
     }
 }
 
-void MainWindow::scanFolder(){
-    if(gphoto != nullptr){
-        qDebug() << "Scanning folder...";
-        QSqlTableModel *model = m_db->getWatchedTable();
 
-        /* iterate the files in the folder */
-        for(int row = 0; row < model->rowCount();row++){
-             if(model->record(row).value(model->fieldIndex("status")).toString() == "Queue" ||
-                     model->record(row).value(model->fieldIndex("status")).toString() == "Scanned"){
-                QDir dir(model->record(row).value(model->fieldIndex("path")).toString());
+void MainWindow::initializeThreadWatchedFolder(){
+//    qDebug() << "Initialize Watched Folder Worker...";
+    thread_watched_folder = new QThread();
+    worker = new Worker(m_db,gphoto);
+    worker->moveToThread(thread_watched_folder);
 
-                QString now = QDateTime::currentDateTime().toString(timeFormat);
-                /* Scale images to 1200px */
-                scaleImages(dir);
-
-                QFileInfoList images = dir.entryInfoList(QStringList() << "*.jpg" << "*.JPG",QDir::Files);
-                // Need to figure out how to NOT add duplicate to photo queue */
-                if (images.length() >0) {
-                    foreach(QFileInfo i, images){
-                        m_db->addPhoto(i.fileName(),
-                                       gphoto->GetAlbumName(),
-                                       "Queue",
-                                       now,
-                                       i.lastModified().toString(timeFormat),
-                                       i.filePath());
-                     }
-                    }
-                    m_db->setWatchedNumFile(row,images.length());
-                    m_db->setWatchedStatus(row,"Scanned");
-                 }
-               }
-    }else
-        qDebug() << "Scan error. Google account not logged in";
+    connect(thread_watched_folder, SIGNAL(started()), worker, SLOT(scanWatchedFolder()));
+    connect(worker, SIGNAL(finished()), thread_watched_folder, SLOT(quit()));
+    connect(worker, SIGNAL(updatedWatchedFolderRow(int ,int)), this, SLOT(updateWatchedFolderView(int,int))); // update row in watched folder view
+    connect(worker, &Worker::updatedQueueRow,this,&MainWindow::setQueueView); // update row in photo queue view
 }
 
+void MainWindow::startThreadWatchedFolder(){
+    if(!thread_watched_folder->isRunning())
+        thread_watched_folder->start();
+}
+
+void MainWindow::updateWatchedFolderView(int row, int num_file){
+//    qDebug() << "Update watched folder view...";
+    m_db->setWatchedNumFile(row,num_file);
+    m_db->setWatchedStatus(row,"Scanned");
+
+    // Hide progress bar when worker thread return finished
+    hideProgressBar();
+}
+
+void MainWindow::setQueueView(QString const &filename,
+                              QString const &album,
+                              QString const &status,
+                              QString const &dateAdded,
+                              QString const &dateModified,
+                              QString const &path){
+//    qDebug() << "Set queue view...";
+    if(m_db!= nullptr){
+        m_db->addPhoto(filename,album,status,dateAdded,dateModified,path);
+    }
+    ui->queueTableView->resizeColumnsToContents();
+
+}
 /************************** END **************************************/
 
-/************************** Scaling Images **************************************/
+/************************** Scaling Images ***************************/
 
 /* scale image to 1200px, save to "1200px" folder in the current directory
  If file exists, do nothing */
@@ -682,7 +692,7 @@ int MainWindow::scaleImage(QString const &filePath){
     QString newPath = info.path()+"/1200px/"+ info.fileName();
     QFileInfo resultInfo (newPath);
 
-    if(resultInfo.exists()){
+    if(resultInfo.exists()){ //skip if photo exists
         size = int(resultInfo.size())/1000; // convert byte to KB
 
     }else
@@ -720,6 +730,7 @@ void MainWindow::enableAddButtons(){
     ui->addEmailButton->disconnect();
     connect(ui->addQueueButton, SIGNAL(clicked()), this, SLOT(addQueue()));
     connect(ui->addFolderButton, SIGNAL(clicked()), this, SLOT(addFolderRequest()));
+
     /* Email */
     connect(ui->addEmailButton,SIGNAL(clicked()),this,SLOT(addEmailQueue()));
     connect(ui->addInputEmailButton,SIGNAL(clicked()),this,SLOT(addUserInputEmailQueue()));
@@ -842,7 +853,6 @@ void MainWindow::addUserInputEmailQueue(){
                         now,
                         paths.join(","));
         ui->emailTableView->resizeColumnsToContents();
-
     }else
         ui->statusBar->showMessage("No selected files");
 
@@ -917,6 +927,18 @@ void MainWindow::initializeThreadEmail(){
     connect(email_worker, SIGNAL(finished()), thread_email, SLOT(quit()));
     connect(email_worker, SIGNAL(updatedRow(int)), this, SLOT(updateEmailView(int)));
 }
+
+void MainWindow::startThreadEmail(){
+/* start thread for email and sms */
+/* NOTE: both email and sms threads automatically stop when task is finished */
+    if(thread_email != nullptr){
+//        qDebug() << "Thread Email active..." << thread_email->isRunning();
+//        qDebug() << "Thread SMS active..." << thread_sms->isRunning();
+        if (!thread_email->isRunning())
+            thread_email->start();
+    }
+}
+
 
 void MainWindow::updateEmailView(int row){
     qDebug() << "Updating email table...";
@@ -1039,42 +1061,7 @@ void MainWindow::updateSMSView(int row){
     ui->smsTableView->resizeColumnsToContents();
 }
 
-//void MainWindow::exportSMSLog(){
-//    qDebug() << "Saving sms log...";
-//    QJsonArray arr;
-//    for(int row = 0; row < smsModel->rowCount();row++){
-//        QJsonObject obj;
-//        QStringList paths = smsModel->item(row,smsHeader.indexOf("Paths"))->text().split(",");
-//        QJsonArray pathsArr;
-//        foreach(QString path, paths){
-//            QJsonObject temp_obj {
-//              {"path",path}
-//            };
-//            pathsArr << temp_obj;
-//        }
-//        obj["Phone"] = smsModel->item(row,smsHeader.indexOf("Phone"))->text();
-//        obj["Carrier"] = smsModel->item(row,smsHeader.indexOf("Carrier"))->text();
-//        obj["Status"] = smsModel->item(row,smsHeader.indexOf("Status"))->text() ;
-//        obj["No. Files"] = smsModel->item(row,smsHeader.indexOf("No. Files"))->text();
-//        obj["Last Scanned"] = smsModel->item(row,smsHeader.indexOf("Last Scanned"))->text() ;
-//        obj["PhotoPaths"]= pathsArr;
 
-//        arr << obj;
-//    }
-
-//    if(!arr.isEmpty()){
-//        /* open sms log.txt */
-//        QFile file (albumFolderPath + QString("/sms_log.txt"));
-//        /* Whether file exists or not, overwrite the data */
-//        if(file.open(QIODevice::WriteOnly)){
-//            QJsonDocument json_doc(arr);
-//            QString json_string = json_doc.toJson();
-//            file.write(json_string.toLocal8Bit());
-//            file.close();
-//        }else
-//            qDebug() << "failed to save progress in" + albumFolderPath << endl;
-//      }
-//}
 /************************** END **************************************/
 
 /************************** Album QR **************************************/
@@ -1106,7 +1093,6 @@ void MainWindow::saveQR(QString const &location){
     }
 }
 /************************** END **************************************/
-
 
 
 /************************** Helper functions **************************************/
@@ -1165,7 +1151,6 @@ bool MainWindow::saveDatabasePath(QString const &filePath){
     return result;
 }
 
-
 void MainWindow::check4ExistingDatabase(QDir &folder){
     /* if data base path is empty, check for existing db file in current directory*/
     if(folder.exists("db.sqlite")){ /* db exisits, all table exist */
@@ -1175,9 +1160,7 @@ void MainWindow::check4ExistingDatabase(QDir &folder){
             QString db_path = folder.absoluteFilePath("db.sqlite");
             m_db = new DBmanager("main_connection",db_path);
             initializeAllTableView();
-
             saveDatabasePath(db_path);
-
             ui->statusBar->showMessage("Data base is loaded");
         }else{
             ui->statusBar->showMessage("Data base is not loaded");
@@ -1187,16 +1170,13 @@ void MainWindow::check4ExistingDatabase(QDir &folder){
         m_db = new DBmanager("main_connection",db_path);
         initializeAllTableView();
         saveDatabasePath(db_path);
-
         ui->statusBar->showMessage("Data base is loaded");
     }
+    /* Reinitialize watched folder worker after the intialization at login*/
+    initializeThreadWatchedFolder();
 }
 
 void MainWindow::initializeAllTableView(){
-    ui->queueTableView->setModel(m_db->getPhotoTable());
-    ui->queueTableView->resizeColumnsToContents();
-    ui->queueTableView->show();
-
     ui->watchTableView->setModel(m_db->getWatchedTable());
     ui->watchTableView->resizeColumnsToContents();
     ui->watchTableView->show();
@@ -1209,7 +1189,9 @@ void MainWindow::initializeAllTableView(){
     ui->smsTableView->resizeColumnsToContents();
     ui->smsTableView->show();
 
+    ui->queueTableView->setModel(m_db->getPhotoTable());
     ui->queueTableView->resizeColumnsToContents();
+    ui->queueTableView->show();
 }
 
 /************************** END **************************************/
@@ -1220,27 +1202,94 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
-/****************************** PROGRESS BAR WORKWER ************************/
-Worker::Worker() { // Constructor
+/****************************** WORKWER ************************/
+Worker::Worker(DBmanager *db, GooglePhoto *gphoto) { // Constructor
+    m_db = db;
+    m_gphoto = gphoto;
 }
 
 Worker::~Worker() { // Destructor
 }
 
-void Worker::work(){
-        int num = 0;
-        while(true){
-            num = (num + 5) % 100;
-            emit progress(num);
-            QThread::msleep(100);
-            if(stop)
-                break;
-        }
-    }
+void Worker::scanWatchedFolder(){
+        if(m_gphoto != nullptr){
+        qDebug() << "Worker scanning folder...";
 
-void Worker::stopWork(){
-    stop = true;
+        QSqlTableModel *model = m_db->getWatchedTable();
+
+        /* iterate the files in the folder */
+        for(int row = 0; row < model->rowCount();row++){
+             if(model->record(row).value(model->fieldIndex("status")).toString() == "Queue" ||
+                     model->record(row).value(model->fieldIndex("status")).toString() == "Scanned"){
+                qDebug() << "processing folder row" << row;
+                QDir dir(model->record(row).value(model->fieldIndex("path")).toString());
+
+                QString now = QDateTime::currentDateTime().toString(timeFormat);
+                /* Scale images to 1200px */
+                scaleImages(dir);
+
+                QFileInfoList images = dir.entryInfoList(QStringList() << "*.jpg" << "*.JPG",QDir::Files);
+                if (images.length() >0) {
+                    foreach(QFileInfo i, images){
+//                        qDebug() << "processing" << i.fileName();
+                        emit updatedQueueRow(i.fileName(),
+                                             m_gphoto->GetAlbumName(),
+                                             "Queue",
+                                             now,
+                                             i.lastModified().toString(timeFormat),
+                                             i.filePath()) ;
+                        }
+                    }
+                    emit updatedWatchedFolderRow(row,images.length());
+                 }
+               }
+    }else
+        qDebug() << "Scan error. Google account not logged in";
+    emit finished();
 }
+
+/************************** Scaling Images ***************************/
+
+/* scale image to 1200px, save to "1200px" folder in the current directory
+ If file exists, do nothing */
+int Worker::scaleImage(QString const &filePath){
+    QThread::msleep(100); // Wait a bit for the file to completely saved to the directory before scalling it */
+
+    int size = 0;
+    QFileInfo info(filePath);
+
+    QString newPath = info.path()+"/1200px/"+ info.fileName();
+    QFileInfo resultInfo (newPath);
+
+    if(resultInfo.exists()){ //skip if photo exists
+        size = int(resultInfo.size())/1000; // convert byte to KB
+
+    }else
+    {
+        /* If "1200px" folder does not exist, create it */
+        info.dir().mkdir("1200px");
+
+        /* Scale photo down */
+        QImage image(filePath);
+        image.scaledToWidth(1200,Qt::TransformationMode::FastTransformation);
+
+        if(image.save(newPath)){
+            qDebug() << "Scale" << filePath << "successful";
+            size = int(resultInfo.size())/1000;
+        }
+
+    }
+    return size;
+}
+
+void Worker::scaleImages(QDir &dir){
+    QStringList paths = dir.entryList(QStringList() << "*.jpg" << "*.JPG",QDir::Files);
+    foreach(QString path, paths){
+//        qDebug() << dir.absoluteFilePath(path);
+        scaleImage(dir.absoluteFilePath(path));
+    }
+}
+/************************** END **************************************/
 
 
 /*************************************** EMAIL WORKER *****************************************/
@@ -1555,3 +1604,91 @@ bool SMSWorker::sendSMTP( QString const &receiver,
 
 SMSWorker::~SMSWorker(){
 }
+
+/****************** Functions not used in MainWindow class ********************/
+void MainWindow::folderTimerStart(){
+//    qDebug() << "folder timer start";
+    folderTimer->start(settings->value("scanningInterval", "10").toInt() * 1000); // convert to ms
+}
+
+void MainWindow::folderTimerStop(){
+//    qDebug() << "folder timer stop";
+    folderTimer->stop();
+}
+
+void MainWindow::folderTimerInit(){
+    folderTimer = new QTimer(this);
+    connect(folderTimer,SIGNAL(timeout()),this,SLOT(scanFolder()));
+}
+
+void MainWindow::scanFolder(){
+    if(gphoto != nullptr){
+        qDebug() << "Scanning folder...";
+        QSqlTableModel *model = m_db->getWatchedTable();
+
+        /* iterate the files in the folder */
+        for(int row = 0; row < model->rowCount();row++){
+             if(model->record(row).value(model->fieldIndex("status")).toString() == "Queue" ||
+                     model->record(row).value(model->fieldIndex("status")).toString() == "Scanned"){
+                QDir dir(model->record(row).value(model->fieldIndex("path")).toString());
+
+                QString now = QDateTime::currentDateTime().toString(timeFormat);
+                /* Scale images to 1200px */
+                scaleImages(dir);
+
+                QFileInfoList images = dir.entryInfoList(QStringList() << "*.jpg" << "*.JPG",QDir::Files);
+                // Need to figure out how to NOT add duplicate to photo queue */
+                if (images.length() >0) {
+                    foreach(QFileInfo i, images){
+                        m_db->addPhoto(i.fileName(),
+                                       gphoto->GetAlbumName(),
+                                       "Queue",
+                                       now,
+                                       i.lastModified().toString(timeFormat),
+                                       i.filePath());
+                     }
+                    }
+                    m_db->setWatchedNumFile(row,images.length());
+                    m_db->setWatchedStatus(row,"Scanned");
+                 }
+               }
+    }else
+        qDebug() << "Scan error. Google account not logged in";
+}
+
+//void MainWindow::exportSMSLog(){
+//    qDebug() << "Saving sms log...";
+//    QJsonArray arr;
+//    for(int row = 0; row < smsModel->rowCount();row++){
+//        QJsonObject obj;
+//        QStringList paths = smsModel->item(row,smsHeader.indexOf("Paths"))->text().split(",");
+//        QJsonArray pathsArr;
+//        foreach(QString path, paths){
+//            QJsonObject temp_obj {
+//              {"path",path}
+//            };
+//            pathsArr << temp_obj;
+//        }
+//        obj["Phone"] = smsModel->item(row,smsHeader.indexOf("Phone"))->text();
+//        obj["Carrier"] = smsModel->item(row,smsHeader.indexOf("Carrier"))->text();
+//        obj["Status"] = smsModel->item(row,smsHeader.indexOf("Status"))->text() ;
+//        obj["No. Files"] = smsModel->item(row,smsHeader.indexOf("No. Files"))->text();
+//        obj["Last Scanned"] = smsModel->item(row,smsHeader.indexOf("Last Scanned"))->text() ;
+//        obj["PhotoPaths"]= pathsArr;
+
+//        arr << obj;
+//    }
+
+//    if(!arr.isEmpty()){
+//        /* open sms log.txt */
+//        QFile file (albumFolderPath + QString("/sms_log.txt"));
+//        /* Whether file exists or not, overwrite the data */
+//        if(file.open(QIODevice::WriteOnly)){
+//            QJsonDocument json_doc(arr);
+//            QString json_string = json_doc.toJson();
+//            file.write(json_string.toLocal8Bit());
+//            file.close();
+//        }else
+//            qDebug() << "failed to save progress in" + albumFolderPath << endl;
+//      }
+//}

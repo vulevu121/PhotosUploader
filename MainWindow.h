@@ -104,24 +104,31 @@ public slots:
 
 
 
-
-/********** PROGRESS BAR WORKER ************/
+/********** WORKER ************/
 class Worker : public QObject {
     Q_OBJECT
 public:
-    Worker();
+    Worker(DBmanager *db, GooglePhoto *gphoto);
     ~Worker();
 
-public slots:
-    void work();
-    void stopWork();
+private slots:
+    int scaleImage(QString const &filePath);
+    void scaleImages(QDir &dir);
+    void scanWatchedFolder();
 
 signals:
-    void progress(int);
-
+    void finished();
+    void updatedWatchedFolderRow(int row, int num_file);
+    void updatedQueueRow(QString const &filename,
+                         QString const &album,
+                         QString const &status,
+                         QString const &dateAdded,
+                         QString const &dateModified,
+                         QString const &path);
 private:
-    bool stop = false;
-
+    QString timeFormat = "MM/dd/yyyy hh:mm AP";
+    DBmanager *m_db = nullptr;
+    GooglePhoto *m_gphoto = nullptr;
 };
 /*******************************/
 
@@ -153,12 +160,22 @@ private slots:
     void stopQueue();
     void resetQueueStatus();
 
+    /* watched folder */
     void addFolder(QString const &folderPath);
     void addFolderRequest();
     void removeFolder();
     void clearFolders();
     void scanFolder();
     void scanTxtFiles(QString const &folderPath);
+    void initializeThreadWatchedFolder();
+    void startThreadWatchedFolder();
+    void updateWatchedFolderView(int row, int num_file);
+    void setQueueView(QString const &filename, // For watched folder thread to add to photo queue in main thread
+                     QString const &album,
+                     QString const &status,
+                     QString const &dateAdded,
+                     QString const &dateModified,
+                     QString const &path);
 
     /* Album methods */
     void createAlbum(QString const &name, QString const &desc);
@@ -199,6 +216,8 @@ private slots:
     void addUserInputEmailQueue();
     void cancelUserInputEmailQueue();
     void updateEmailView(int row);
+    void startThreadEmail(); //for email worker
+
 //    void exportEmailLog();
 
 
@@ -251,8 +270,6 @@ private slots:
     void syncSettings();
     void deleteAllObjects();
     int getTotalSize(QStringList &filePaths);
-    void startThread();
-    void showThreadDone();
     void showProgressBar();
     void hideProgressBar();
     void checkTableStatus();
@@ -280,7 +297,7 @@ private:
 
     QThread *thread_email = nullptr;
     QThread *thread_sms = nullptr;
-
+    QThread *thread_watched_folder = nullptr;
 
     QString const SMTP_user = "info.enchanted.oc@gmail.com";
     QString const SMTP_pass = "PixylBoys$2020";
